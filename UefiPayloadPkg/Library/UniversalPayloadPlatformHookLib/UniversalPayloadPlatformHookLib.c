@@ -15,8 +15,6 @@
 #include <Library/HobLib.h>
 #include <Library/IoLib.h>
 
-#define GET_BOOTLOADER_PARAMETER()      (*(UINTN *)(UINTN)(PcdGet32(PcdPayloadStackTop) - sizeof(UINT64)))
-
 /**
   Performs platform specific initialization required for the CPU to access
   the hardware associated with a SerialPortLib instance.  This function does
@@ -38,7 +36,7 @@ PlatformHookSerialPortInitialize (
   PLD_SERIAL_PORT_INFO  *SerialPortInfo;
   UINT8                 *GuidHob;
 
-  GuidHob = GetNextGuidHob (&gPldSerialPortInfoGuid, (VOID*)(UINTN)GET_BOOTLOADER_PARAMETER ());
+  GuidHob = GetNextGuidHob (&gPldSerialPortInfoGuid, (VOID*) (UINTN) GetHobList());
   if (GuidHob == NULL) {
     return EFI_NOT_FOUND;
   }

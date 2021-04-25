@@ -14,7 +14,7 @@
   MODULE_TYPE                    = BASE
   VERSION_STRING                 = 1.0
   LIBRARY_CLASS                  = PlatformHookLib
-
+  CONSTRUCTOR                    = PlatformHookSerialPortInitialize
 [Sources]
   UniversalPayloadPlatformHookLib.c
 
@@ -22,6 +22,7 @@
   PcdLib
   BaseLib
   HobLib
+  DxeHobListLib
 
 [Packages]
   MdePkg/MdePkg.dec
