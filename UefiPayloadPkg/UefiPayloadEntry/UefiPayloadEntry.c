@@ -7,6 +7,7 @@
 
 #include "UefiPayloadEntry.h"
 
+VOID  *mHobList = NULL;
 /**
   Entry point to the C language phase of UEFI payload.
 
@@ -15,7 +16,7 @@
 VOID
 EFIAPI
 PayloadEntry (
-  IN UINTN                     BootloaderParameter
+  IN EFI_HOB_HANDOFF_INFO_TABLE *HobList
   )
 {
   EFI_STATUS                    Status;
@@ -26,7 +27,11 @@ PayloadEntry (
   PLD_IMAGE_BASE_HOB            *PldImageBaseHob;
   UINT8                         *GuidHob;
 
-  // Call constructor for all libraries
+  //
+  // Library constructors rely on mHobList assignment for serial port information retrieval.
+  //
+  mHobList = (VOID *) HobList;
+
   ProcessLibraryConstructorList ();
 
   DEBUG ((DEBUG_INFO, "sizeof(UINTN) = 0x%x\n", sizeof(UINTN)));
@@ -37,10 +42,10 @@ PayloadEntry (
   InitializeFloatingPointUnits ();
 
   // Build HOB based on information from Bootloader
-  Status = BuildHobs (BootloaderParameter);
+  Status = BuildHobs (HobList);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "BuildHobs Status = %r\n", Status));
-    return Status;
+    return;
   }
 
   // Get Payload Image Base
@@ -69,5 +74,4 @@ PayloadEntry (
 
   // Should not get here
   CpuDeadLoop ();
-  return EFI_SUCCESS;
 }
