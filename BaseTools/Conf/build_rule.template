@@ -272,6 +272,9 @@
     <Command.MSFT, Command.INTEL, Command.CLANGPDB>
         "$(SLINK)" $(SLINK_FLAGS) /OUT:${dst} @$(OBJECT_FILES_LIST)
 
+    <Command.CLANGELFPDB>
+        "$(SLINK)" cr ${dst} $(SLINK_FLAGS) @$(OBJECT_FILES_LIST)
+
     <Command.GCC>
         $(RM) ${dst}
         "$(SLINK)" cr ${dst} $(SLINK_FLAGS) @$(OBJECT_FILES_LIST)
@@ -293,6 +296,9 @@
     <ExtraDependency>
         $(MAKE_FILE)
 
+    <OutputFile.CLANGELFPDB>
+        $(DEBUG_DIR)(+)$(MODULE_NAME).elf
+
     <OutputFile>
         $(DEBUG_DIR)(+)$(MODULE_NAME).dll
 
@@ -302,6 +308,9 @@
 
     <Command.CLANGPDB>
         "$(DLINK)" /OUT:${dst} $(DLINK_FLAGS) $(DLINK_SPATH) @$(STATIC_LIBRARY_FILES_LIST) $(DLINK2_FLAGS)
+
+    <Command.CLANGELFPDB>
+        "$(DLINK)" -o ${dst} $(DLINK_FLAGS) @$(STATIC_LIBRARY_FILES_LIST)
 
     <Command.GCC>
         "$(DLINK)" -o ${dst} $(DLINK_FLAGS) -Wl,--start-group,@$(STATIC_LIBRARY_FILES_LIST),--end-group $(CC_FLAGS) $(DLINK2_FLAGS)
@@ -373,6 +382,10 @@
         $(CP) ${dst} $(BIN_DIR)(+)$(MODULE_NAME_GUID).efi
         -$(CP) $(DEBUG_DIR)(+)*.map $(OUTPUT_DIR)
         -$(CP) $(DEBUG_DIR)(+)*.pdb $(OUTPUT_DIR) 
+
+    <Command.CLANGELFPDB>
+        -$(CP) $(DEBUG_DIR)(+)*.map $(OUTPUT_DIR)
+
     <Command.GCC>
         $(CP) ${src} $(DEBUG_DIR)(+)$(MODULE_NAME).debug
         $(OBJCOPY) --strip-unneeded -R .eh_frame ${src}
