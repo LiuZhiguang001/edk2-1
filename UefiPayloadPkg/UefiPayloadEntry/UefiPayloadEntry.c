@@ -75,3 +75,12 @@ PayloadEntry (
   // Should not get here
   CpuDeadLoop ();
 }
+
+VOID
+EFIAPI
+_ModuleEntryPoint(
+  IN VOID *HobList
+  )
+{
+  PayloadEntry(HobList);
+}
