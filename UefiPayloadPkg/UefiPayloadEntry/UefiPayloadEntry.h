@@ -140,4 +140,15 @@ BuildHobs (
   IN UINTN                     BootloaderParameter
   );
 
+/**
+  Print all HOBs info from the HOB list.
+
+  @return The pointer to the HOB list.
+**/
+VOID
+EFIAPI
+PrintHob (
+  IN CONST VOID             *HobStart
+  );
+
 #endif

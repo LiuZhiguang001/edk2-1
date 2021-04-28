@@ -26,6 +26,7 @@
   LoadDxeCore.c
   MemoryAllocation.c
   BuildHobs.c
+  PrintHob.c
 
 [Sources.Ia32]
   X64/VirtualMemory.h
@@ -68,6 +69,9 @@
   gPldSmbiosTableGuid
   gPldAcpiTableGuid
   gPldImageBaseGuid
+  gEfiHobMemoryAllocStackGuid
+  gEfiHobMemoryAllocBspStoreGuid
+  gEfiHobMemoryAllocModuleGuid
 
 [FeaturePcd.IA32]
   gEfiMdeModulePkgTokenSpaceGuid.PcdDxeIplSwitchToLongMode      ## CONSUMES
