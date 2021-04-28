@@ -7,13 +7,12 @@
 
 #include "UefiPayloadEntry.h"
 
-
 /**
   Entry point to the C language phase of UEFI payload.
 
   @retval      It will not return if SUCCESS, and return error when passing bootloader parameter.
 **/
-EFI_STATUS
+VOID
 EFIAPI
 PayloadEntry (
   IN UINTN                     BootloaderParameter
@@ -31,7 +30,9 @@ PayloadEntry (
   ProcessLibraryConstructorList ();
 
   DEBUG ((DEBUG_INFO, "sizeof(UINTN) = 0x%x\n", sizeof(UINTN)));
-
+  DEBUG_CODE (
+    PrintHob (HobList);
+  );
   // Initialize floating point operating environment to be compliant with UEFI spec.
   InitializeFloatingPointUnits ();
 
