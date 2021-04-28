@@ -76,11 +76,3 @@ _ModuleEntryPoint (
   CpuDeadLoop ();
 }
 
-VOID
-EFIAPI
-_ModuleEntryPoint(
-  IN VOID *HobList
-  )
-{
-  PayloadEntry(HobList);
-}
