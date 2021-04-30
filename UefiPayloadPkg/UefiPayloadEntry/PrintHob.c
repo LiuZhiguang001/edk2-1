@@ -7,7 +7,7 @@
 
 #include "UefiPayloadEntry.h"
 
-char * Memorey_Type_List[17] = {
+UINT8* Memorey_Type_List[17] = {
   "EfiReservedMemoryType",
   "EfiLoaderCode",
   "EfiLoaderData",
@@ -26,6 +26,83 @@ char * Memorey_Type_List[17] = {
   "EfiMaxMemoryType"
   };
 
+typedef
+VOID
+(EFIAPI *PRINT_ONE_HOB)(
+  IN VOID             *HobPointer
+  );
+
+typedef struct {
+  EFI_GUID           *GUID;
+  PRINT_ONE_HOB      PrintHob;
+} GUID_HANDLER_PAIR;
+
+VOID
+PrintHandOffHob(
+  IN VOID             *HobPointer
+  )
+{
+  EFI_PEI_HOB_POINTERS  Hob;
+  Hob.Raw = HobPointer;
+  DEBUG ((DEBUG_INFO, "   BootMode = 0x%x\n", Hob.HandoffInformationTable->BootMode));
+  DEBUG ((DEBUG_INFO, "   EfiMemoryTop = 0x%lx\n", Hob.HandoffInformationTable->EfiMemoryTop));
+  DEBUG ((DEBUG_INFO, "   EfiMemoryBottom = 0x%lx\n", Hob.HandoffInformationTable->EfiMemoryBottom));
+  DEBUG ((DEBUG_INFO, "   EfiFreeMemoryTop = 0x%lx\n", Hob.HandoffInformationTable->EfiFreeMemoryTop));
+  DEBUG ((DEBUG_INFO, "   EfiFreeMemoryBottom = 0x%lx\n", Hob.HandoffInformationTable->EfiFreeMemoryBottom));
+  DEBUG ((DEBUG_INFO, "   EfiEndOfHobList = 0x%lx\n", Hob.HandoffInformationTable->EfiEndOfHobList));
+}
+
+VOID
+PrintGuidHob(
+  IN VOID             *HobPointer
+  )
+{
+  EFI_PEI_HOB_POINTERS  Hob;
+  Hob.Raw = HobPointer;
+  DEBUG ((DEBUG_INFO, "   BootMode = 0x%x\n", Hob.HandoffInformationTable->BootMode));
+  DEBUG ((DEBUG_INFO, "   EfiMemoryTop = 0x%lx\n", Hob.HandoffInformationTable->EfiMemoryTop));
+  DEBUG ((DEBUG_INFO, "   EfiMemoryBottom = 0x%lx\n", Hob.HandoffInformationTable->EfiMemoryBottom));
+  DEBUG ((DEBUG_INFO, "   EfiFreeMemoryTop = 0x%lx\n", Hob.HandoffInformationTable->EfiFreeMemoryTop));
+  DEBUG ((DEBUG_INFO, "   EfiFreeMemoryBottom = 0x%lx\n", Hob.HandoffInformationTable->EfiFreeMemoryBottom));
+  DEBUG ((DEBUG_INFO, "   EfiEndOfHobList = 0x%lx\n", Hob.HandoffInformationTable->EfiEndOfHobList));
+}
+
+
+UINT8*  HobTypeStringList[13] = {
+  "Undefined                       ",   //Undefined                         0x0000
+  "EFI_HOB_TYPE_HANDOFF            ",   //EFI_HOB_TYPE_HANDOFF              0x0001
+  "EFI_HOB_TYPE_MEMORY_ALLOCATION  ",   //EFI_HOB_TYPE_MEMORY_ALLOCATION    0x0002
+  "EFI_HOB_TYPE_RESOURCE_DESCRIPTOR",   //EFI_HOB_TYPE_RESOURCE_DESCRIPTOR  0x0003
+  "EFI_HOB_TYPE_GUID_EXTENSION     ",   //EFI_HOB_TYPE_GUID_EXTENSION       0x0004
+  "EFI_HOB_TYPE_FV                 ",   //EFI_HOB_TYPE_FV                   0x0005
+  "EFI_HOB_TYPE_CPU                ",   //EFI_HOB_TYPE_CPU                  0x0006
+  "EFI_HOB_TYPE_MEMORY_POOL        ",   //EFI_HOB_TYPE_MEMORY_POOL          0x0007
+  "Undefined                       ",   //Undefined                         0x0008
+  "EFI_HOB_TYPE_FV2                ",   //EFI_HOB_TYPE_FV2                  0x0009
+  "EFI_HOB_TYPE_LOAD_PEIM_UNUSED   ",   //EFI_HOB_TYPE_LOAD_PEIM_UNUSED     0x000A
+  "EFI_HOB_TYPE_UEFI_CAPSULE       ",   //EFI_HOB_TYPE_UEFI_CAPSULE         0x000B
+  "EFI_HOB_TYPE_FV3                "    //EFI_HOB_TYPE_FV3                  0x000C
+  };  
+
+PRINT_ONE_HOB PrintHobHandlerList[13] = {
+  NULL,             //Undefined                         0x0000
+  PrintHandOffHob,  //EFI_HOB_TYPE_HANDOFF              0x0001
+  NULL,             //EFI_HOB_TYPE_MEMORY_ALLOCATION    0x0002
+  NULL,             //EFI_HOB_TYPE_RESOURCE_DESCRIPTOR  0x0003
+  PrintGuidHob,     //EFI_HOB_TYPE_GUID_EXTENSION       0x0004
+  NULL,             //EFI_HOB_TYPE_FV                   0x0005
+  NULL,             //EFI_HOB_TYPE_CPU                  0x0006
+  NULL,             //EFI_HOB_TYPE_MEMORY_POOL          0x0007
+  NULL,             //Undefined                         0x0008
+  NULL,             //EFI_HOB_TYPE_FV2                  0x0009
+  NULL,             //EFI_HOB_TYPE_LOAD_PEIM_UNUSED     0x000A
+  NULL,             //EFI_HOB_TYPE_UEFI_CAPSULE         0x000B
+  NULL              //EFI_HOB_TYPE_FV3                  0x000C
+  };     
+
+//GUID_HANDLER_PAIR GuidHandlerPairList[] = {
+//  {},
+//}
 /**
   Print all HOBs info from the HOB list.
 
@@ -39,6 +116,7 @@ PrintHob (
 {
   EFI_PEI_HOB_POINTERS  Hob;
   UINTN                 Count;
+  PRINT_ONE_HOB         PrintOneHobHandler;
 
   ASSERT (HobStart != NULL);
    
@@ -51,19 +129,20 @@ PrintHob (
   // Parse the HOB list to see which type it is, and print the information.
   //
   while (!END_OF_HOB_LIST (Hob)) {
+    DEBUG ((DEBUG_INFO, "HOB[%d]: Type = %s  Offset = 0x%x  Length = %d, ",
+      Count, HobTypeStringList[Hob.Header->HobType], (UINTN)Hob.Raw, Hob.Header->HobLength));
     Count++;
-    DEBUG ((DEBUG_INFO, "This is the NO.%d Hob, ", Count));
+    PrintOneHobHandler = PrintHobHandlerList[Hob.Header->HobType];
+    if (PrintOneHobHandler == NULL) {
+      DEBUG ((DEBUG_ERROR, "Error: there is no print function for this kind of type %d\n", Hob.Header->HobType));
+    }
+/*
     switch (Hob.Header->HobType) {
       case EFI_HOB_TYPE_HANDOFF:
         DEBUG ((DEBUG_INFO, "whoes type is EFI_HOB_TYPE_HANDOFF\n"));
         DEBUG ((DEBUG_INFO, "   HOB Offset = 0x%x\n", Hob));
         DEBUG ((DEBUG_INFO, "   HobLength = 0x%x\n", Hob.HandoffInformationTable->Header.HobLength));
-        DEBUG ((DEBUG_INFO, "   BootMode = 0x%x\n", Hob.HandoffInformationTable->BootMode));
-        DEBUG ((DEBUG_INFO, "   EfiMemoryTop = 0x%lx\n", Hob.HandoffInformationTable->EfiMemoryTop));
-        DEBUG ((DEBUG_INFO, "   EfiMemoryBottom = 0x%lx\n", Hob.HandoffInformationTable->EfiMemoryBottom));
-        DEBUG ((DEBUG_INFO, "   EfiFreeMemoryTop = 0x%lx\n", Hob.HandoffInformationTable->EfiFreeMemoryTop));
-        DEBUG ((DEBUG_INFO, "   EfiFreeMemoryBottom = 0x%lx\n", Hob.HandoffInformationTable->EfiFreeMemoryBottom));
-        DEBUG ((DEBUG_INFO, "   EfiEndOfHobList = 0x%lx\n", Hob.HandoffInformationTable->EfiEndOfHobList));
+
         break;
       case EFI_HOB_TYPE_MEMORY_ALLOCATION:
         if(CompareGuid (&(Hob.MemoryAllocation->AllocDescriptor.Name), &gEfiHobMemoryAllocStackGuid)) {
@@ -165,6 +244,8 @@ PrintHob (
         DEBUG ((DEBUG_INFO, "\n"));
         break;
     }
+
+*/
     Hob.Raw = GET_NEXT_HOB (Hob);
   }
   DEBUG ((DEBUG_INFO, "There are totally %d Hobs, the End Hob address is %p\n", Count, Hob.Raw));
