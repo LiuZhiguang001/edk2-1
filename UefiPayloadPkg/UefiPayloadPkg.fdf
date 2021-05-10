@@ -52,7 +52,9 @@ READ_STATUS        = TRUE
 READ_LOCK_CAP      = TRUE
 READ_LOCK_STATUS   = TRUE
 
-INF UefiPayloadPkg/UefiPayloadEntry/UefiPayloadEntry.inf
+!if $(UNIVERSAL_PAYLOAD) == FALSE
+  INF UefiPayloadPkg/UefiPayloadEntry/UefiPayloadEntry.inf
+!endif
 
 FILE FV_IMAGE = 4E35FD93-9C72-4c15-8C4B-E77F1DB2D793 {
     SECTION FV_IMAGE = DXEFV
@@ -213,7 +215,9 @@ INF  RuleOverride = BINARY USE = X64 ShellBinPkg/UefiShell/UefiShell.inf
 
 [Rule.Common.SEC]
   FILE SEC = $(NAMED_GUID) {
+!if $(UNIVERSAL_PAYLOAD) == FALSE
     PE32     PE32   Align=32    $(INF_OUTPUT)/$(MODULE_NAME).efi
+!endif
   }
 
 [Rule.Common.PEI_CORE]

@@ -1,6 +1,6 @@
 /** @file
 
-  Copyright (c) 2014 - 2020, Intel Corporation. All rights reserved.<BR>
+  Copyright (c) 2014 - 2021, Intel Corporation. All rights reserved.<BR>
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
@@ -234,6 +234,8 @@ BuildHobFromBl (
   EFI_PEI_GRAPHICS_INFO_HOB        *NewGfxInfo;
   EFI_PEI_GRAPHICS_DEVICE_INFO_HOB GfxDeviceInfo;
   EFI_PEI_GRAPHICS_DEVICE_INFO_HOB *NewGfxDeviceInfo;
+  PLD_SMBIOS_TABLE                 *SmBiosTableHob;
+  PLD_ACPI_TABLE                   *AcpiTableHob;
 
   //
   // Parse memory info and build memory HOBs
@@ -276,6 +278,23 @@ BuildHobFromBl (
     DEBUG ((DEBUG_INFO, "Detected Acpi Table at 0x%lx, length 0x%x\n", SysTableInfo.AcpiTableBase, SysTableInfo.AcpiTableSize));
     DEBUG ((DEBUG_INFO, "Detected Smbios Table at 0x%lx, length 0x%x\n", SysTableInfo.SmbiosTableBase, SysTableInfo.SmbiosTableSize));
   }
+  //
+  // Creat SmBios table Hob
+  //
+  SmBiosTableHob = BuildGuidHob (&gPldSmbiosTableGuid, sizeof (PLD_SMBIOS_TABLE));
+  ASSERT (SmBiosTableHob != NULL);
+  SmBiosTableHob->PldHeader.Revision = PLD_GENERIC_HEADER_REVISION;
+  SmBiosTableHob->SmBiosEntryPoint = SysTableInfo.SmbiosTableBase;
+  DEBUG ((DEBUG_INFO, "Create smbios table gPldSmbiosTableGuid guid hob\n"));
+
+  // 
+  // Creat ACPI table Hob
+  //
+  AcpiTableHob = BuildGuidHob (&gPldAcpiTableGuid, sizeof (PLD_ACPI_TABLE));
+  ASSERT (AcpiTableHob != NULL);
+  AcpiTableHob->PldHeader.Revision = PLD_GENERIC_HEADER_REVISION;
+  AcpiTableHob->Rsdp = SysTableInfo.AcpiTableBase;
+  DEBUG ((DEBUG_INFO, "Create smbios table gPldAcpiTableGuid guid hob\n"));
 
   //
   // Create guid hob for acpi board information
@@ -361,7 +380,6 @@ PayloadEntry (
   PHYSICAL_ADDRESS              DxeCoreEntryPoint;
   EFI_HOB_HANDOFF_INFO_TABLE    *HandoffHobTable;
   UINTN                         MemBase;
-  UINTN                         MemSize;
   UINTN                         HobMemBase;
   UINTN                         HobMemTop;
   EFI_PEI_HOB_POINTERS          Hob;
@@ -380,9 +398,7 @@ PayloadEntry (
   HobMemBase = ALIGN_VALUE (MemBase + PcdGet32 (PcdPayloadFdMemSize), SIZE_1MB);
   HobMemTop  = HobMemBase + FixedPcdGet32 (PcdSystemMemoryUefiRegionSize);
 
-  // DXE core assumes the memory below HOB region could be used, so include the FV region memory into HOB range.
-  MemSize    = HobMemTop - MemBase;
-  HandoffHobTable = HobConstructor ((VOID *)MemBase, MemSize, (VOID *)HobMemBase, (VOID *)HobMemTop);
+  HobConstructor ((VOID *)MemBase, (VOID *)HobMemTop, (VOID *)HobMemBase, (VOID *)HobMemTop);
 
   // Build HOB based on information from Bootloader
   Status = BuildHobFromBl ();
