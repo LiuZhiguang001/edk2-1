@@ -248,6 +248,13 @@ BuildHobs (
   return EFI_SUCCESS;
 }
 
+VOID
+EFIAPI
+PrintHob (
+  IN CONST VOID             *HobStart
+  );
+
+
 /**
   Entry point to the C language phase of UEFI payload.
 
@@ -272,6 +279,7 @@ _ModuleEntryPoint (
   ProcessLibraryConstructorList ();
 
   DEBUG ((DEBUG_INFO, "sizeof(UINTN) = 0x%x\n", sizeof(UINTN)));
+  PrintHob((VOID *) BootloaderParameter);
 
   // Initialize floating point operating environment to be compliant with UEFI spec.
   InitializeFloatingPointUnits ();
