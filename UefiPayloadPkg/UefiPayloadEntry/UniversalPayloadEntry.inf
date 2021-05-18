@@ -71,6 +71,9 @@
   gPldSerialPortInfoGuid
   gPldSmbios3TableGuid
   gPldSmbiosTableGuid
+  gPldPciRootBridgeInfoGuid
+  gSpiFlashInfoGuid
+  gNvVariableInfoGuid
 
 [FeaturePcd.IA32]
   gEfiMdeModulePkgTokenSpaceGuid.PcdDxeIplSwitchToLongMode      ## CONSUMES

@@ -15,6 +15,7 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 //
 // HobType of EFI_HOB_GENERIC_HEADER.
 //
+#define EFI_HOB_TYPE_INCORRECT              0x0000
 #define EFI_HOB_TYPE_HANDOFF              0x0001
 #define EFI_HOB_TYPE_MEMORY_ALLOCATION    0x0002
 #define EFI_HOB_TYPE_RESOURCE_DESCRIPTOR  0x0003
