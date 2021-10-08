@@ -43,4 +43,4 @@
   GCC:*_CLANGPDB_*_CC_FLAGS = -D PB_SYSTEM_HEADER=\"Proto.h\"  -Wno-implicit-function-declaration
   GCC:*_CLANGDWARF_*_CC_FLAGS = -D PB_SYSTEM_HEADER=\"Proto.h\" -Wno-implicit-function-declaration
   
-  MSFT:*_*_*_CC_FLAGS = /D PB_SYSTEM_HEADER=\"Proto.h\"
+  MSFT:*_*_*_CC_FLAGS = /wd4244 /D PB_SYSTEM_HEADER=\"Proto.h\"
