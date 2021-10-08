@@ -17,6 +17,17 @@
 #define memcpy                      CopyMem
 #define memset(dest,ch,count)       SetMem(dest,(UINTN)(count),(UINT8)(ch))
 #define strlen(str)                 (size_t)(AsciiStrnLenS(str,MAX_STRING_SIZE))
+
+#define memcmp(buf1,buf2,count)           (int)(CompareMem(buf1,buf2,(UINTN)(count)))
+#define memmove(dest,source,count)        CopyMem(dest,source,(UINTN)(count))
+#define strcpy(strDest,strSource)         AsciiStrCpyS(strDest,MAX_STRING_SIZE,strSource)
+#define strncpy(strDest,strSource,count)  AsciiStrnCpyS(strDest,MAX_STRING_SIZE,strSource,(UINTN)count)
+#define atoi(str)                         AsciiStrDecimalToUintn(str)
+#define strcmp(str1, str2)                AsciiStrCmp(str1,str2)
+#define assert(expression)
+
+#define CHAR_BIT    8       /* Number of bits in a char */
+
 typedef INT8     int8_t;
 typedef INT16    int16_t;
 typedef INT32    int32_t;
