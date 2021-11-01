@@ -354,7 +354,7 @@ HandOffToDxeCore (
       BaseOfStack,
       STACK_SIZE
       ));
-
+    BuildMemMap();
     //
     // Go to Long Mode and transfer control to DxeCore.
     // Interrupts will not get turned on until the CPU AP is loaded.
@@ -441,7 +441,7 @@ HandOffToDxeCore (
       BaseOfStack,
       STACK_SIZE
       ));
-
+    BuildMemMap();
     //
     // Transfer the control to the entry point of DxeCore.
     //
