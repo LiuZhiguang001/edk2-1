@@ -238,6 +238,77 @@ FindAnotherHighestBelow4GResourceDescriptor (
   return ReturnResourceHob;
 }
 
+EFI_STATUS
+FindFreeMemoryFromResourceDescriptorHob (
+  IN  EFI_PEI_HOB_POINTERS             HobStart,
+  IN  UINTN                            MinimalNeededSize,
+  OUT EFI_PHYSICAL_ADDRESS             *FreeMemoryBottom,
+  OUT EFI_PHYSICAL_ADDRESS             *FreeMemoryTop,
+  OUT EFI_PHYSICAL_ADDRESS             *MemoryBottom,
+  OUT EFI_PHYSICAL_ADDRESS             *MemoryTop
+  )
+{
+  EFI_HOB_RESOURCE_DESCRIPTOR      *PhitResourceHob;
+  EFI_HOB_RESOURCE_DESCRIPTOR      *ResourceHob;
+
+  ASSERT (HobStart.Raw != NULL);
+  ASSERT ((UINTN) HobStart.HandoffInformationTable->EfiFreeMemoryTop == HobStart.HandoffInformationTable->EfiFreeMemoryTop);
+  ASSERT ((UINTN) HobStart.HandoffInformationTable->EfiMemoryTop == HobStart.HandoffInformationTable->EfiMemoryTop);
+  ASSERT ((UINTN) HobStart.HandoffInformationTable->EfiFreeMemoryBottom == HobStart.HandoffInformationTable->EfiFreeMemoryBottom);
+  ASSERT ((UINTN) HobStart.HandoffInformationTable->EfiMemoryBottom == HobStart.HandoffInformationTable->EfiMemoryBottom);
+
+
+  //
+  // Try to find Resource Descriptor HOB that contains Hob range EfiMemoryBottom..EfiMemoryTop
+  //
+  PhitResourceHob = FindResourceDescriptorByRange(HobStart.Raw, HobStart.HandoffInformationTable->EfiMemoryBottom, HobStart.HandoffInformationTable->EfiMemoryTop);
+  if (PhitResourceHob == NULL) {
+    //
+    // Boot loader's Phit Hob is not in an available Resource Descriptor, find another Resource Descriptor for new Phit Hob
+    //
+    ResourceHob = FindAnotherHighestBelow4GResourceDescriptor(HobStart.Raw, MinimalNeededSize, NULL);
+    if (ResourceHob == NULL) {
+      return EFI_NOT_FOUND;
+    }
+
+    *MemoryBottom     = ResourceHob->PhysicalStart + ResourceHob->ResourceLength - MinimalNeededSize;
+    *FreeMemoryBottom = *MemoryBottom;
+    *FreeMemoryTop    = ResourceHob->PhysicalStart + ResourceHob->ResourceLength;
+    *MemoryTop        = *FreeMemoryTop;
+  } else if (PhitResourceHob->PhysicalStart + PhitResourceHob->ResourceLength - HobStart.HandoffInformationTable->EfiMemoryTop >= MinimalNeededSize) {
+    //
+    // New availiable Memory range in new hob is right above memory top in old hob.
+    //
+    *MemoryBottom     = HobStart.HandoffInformationTable->EfiFreeMemoryTop;
+    *FreeMemoryBottom = HobStart.HandoffInformationTable->EfiMemoryTop;
+    *FreeMemoryTop    = *FreeMemoryBottom + MinimalNeededSize;
+    *MemoryTop        = *FreeMemoryTop;
+  } else if (HobStart.HandoffInformationTable->EfiMemoryBottom - PhitResourceHob->PhysicalStart >= MinimalNeededSize) {
+    //
+    // New availiable Memory range in new hob is right below memory bottom in old hob.
+    //
+    *MemoryBottom     = HobStart.HandoffInformationTable->EfiMemoryBottom - MinimalNeededSize;
+    *FreeMemoryBottom = *MemoryBottom;
+    *FreeMemoryTop    = HobStart.HandoffInformationTable->EfiMemoryBottom;
+    *MemoryTop        = HobStart.HandoffInformationTable->EfiMemoryTop;
+  } else {
+    //
+    // In the Resource Descriptor HOB contains boot loader Hob, there is no enough free memory size for payload hob
+    // Find another Resource Descriptor Hob
+    //
+    ResourceHob = FindAnotherHighestBelow4GResourceDescriptor(HobStart.Raw, MinimalNeededSize, PhitResourceHob);
+    if (ResourceHob == NULL) {
+      return EFI_NOT_FOUND;
+    }
+
+    *MemoryBottom     = ResourceHob->PhysicalStart + ResourceHob->ResourceLength - MinimalNeededSize;
+    *FreeMemoryBottom = *MemoryBottom;
+    *FreeMemoryTop    = ResourceHob->PhysicalStart + ResourceHob->ResourceLength;
+    *MemoryTop        = *FreeMemoryTop;
+  }
+  return EFI_SUCCESS;
+}
+
 /**
   It will build HOBs based on information from bootloaders.
 
@@ -253,14 +324,14 @@ BuildHobs (
   OUT EFI_FIRMWARE_VOLUME_HEADER  **DxeFv
   )
 {
+  EFI_STATUS                       Status;
   EFI_PEI_HOB_POINTERS             Hob;
   UINTN                            MinimalNeededSize;
   EFI_PHYSICAL_ADDRESS             FreeMemoryBottom;
   EFI_PHYSICAL_ADDRESS             FreeMemoryTop;
   EFI_PHYSICAL_ADDRESS             MemoryBottom;
   EFI_PHYSICAL_ADDRESS             MemoryTop;
-  EFI_HOB_RESOURCE_DESCRIPTOR      *PhitResourceHob;
-  EFI_HOB_RESOURCE_DESCRIPTOR      *ResourceHob;
+
   UNIVERSAL_PAYLOAD_EXTRA_DATA     *ExtraData;
   UINT8                            *GuidHob;
   EFI_HOB_FIRMWARE_VOLUME          *FvHob;
@@ -269,61 +340,16 @@ BuildHobs (
 
   Hob.Raw = (UINT8 *) BootloaderParameter;
   MinimalNeededSize = FixedPcdGet32 (PcdSystemMemoryUefiRegionSize);
-
-  ASSERT (Hob.Raw != NULL);
-  ASSERT ((UINTN) Hob.HandoffInformationTable->EfiFreeMemoryTop == Hob.HandoffInformationTable->EfiFreeMemoryTop);
-  ASSERT ((UINTN) Hob.HandoffInformationTable->EfiMemoryTop == Hob.HandoffInformationTable->EfiMemoryTop);
-  ASSERT ((UINTN) Hob.HandoffInformationTable->EfiFreeMemoryBottom == Hob.HandoffInformationTable->EfiFreeMemoryBottom);
-  ASSERT ((UINTN) Hob.HandoffInformationTable->EfiMemoryBottom == Hob.HandoffInformationTable->EfiMemoryBottom);
-
-
-  //
-  // Try to find Resource Descriptor HOB that contains Hob range EfiMemoryBottom..EfiMemoryTop
-  //
-  PhitResourceHob = FindResourceDescriptorByRange(Hob.Raw, Hob.HandoffInformationTable->EfiMemoryBottom, Hob.HandoffInformationTable->EfiMemoryTop);
-  if (PhitResourceHob == NULL) {
-    //
-    // Boot loader's Phit Hob is not in an available Resource Descriptor, find another Resource Descriptor for new Phit Hob
-    //
-    ResourceHob = FindAnotherHighestBelow4GResourceDescriptor(Hob.Raw, MinimalNeededSize, NULL);
-    if (ResourceHob == NULL) {
-      return EFI_NOT_FOUND;
-    }
-
-    MemoryBottom     = ResourceHob->PhysicalStart + ResourceHob->ResourceLength - MinimalNeededSize;
-    FreeMemoryBottom = MemoryBottom;
-    FreeMemoryTop    = ResourceHob->PhysicalStart + ResourceHob->ResourceLength;
-    MemoryTop        = FreeMemoryTop;
-  } else if (PhitResourceHob->PhysicalStart + PhitResourceHob->ResourceLength - Hob.HandoffInformationTable->EfiMemoryTop >= MinimalNeededSize) {
-    //
-    // New availiable Memory range in new hob is right above memory top in old hob.
-    //
-    MemoryBottom     = Hob.HandoffInformationTable->EfiFreeMemoryTop;
-    FreeMemoryBottom = Hob.HandoffInformationTable->EfiMemoryTop;
-    FreeMemoryTop    = FreeMemoryBottom + MinimalNeededSize;
-    MemoryTop        = FreeMemoryTop;
-  } else if (Hob.HandoffInformationTable->EfiMemoryBottom - PhitResourceHob->PhysicalStart >= MinimalNeededSize) {
-    //
-    // New availiable Memory range in new hob is right below memory bottom in old hob.
-    //
-    MemoryBottom     = Hob.HandoffInformationTable->EfiMemoryBottom - MinimalNeededSize;
-    FreeMemoryBottom = MemoryBottom;
-    FreeMemoryTop    = Hob.HandoffInformationTable->EfiMemoryBottom;
-    MemoryTop        = Hob.HandoffInformationTable->EfiMemoryTop;
-  } else {
-    //
-    // In the Resource Descriptor HOB contains boot loader Hob, there is no enough free memory size for payload hob
-    // Find another Resource Descriptor Hob
-    //
-    ResourceHob = FindAnotherHighestBelow4GResourceDescriptor(Hob.Raw, MinimalNeededSize, PhitResourceHob);
-    if (ResourceHob == NULL) {
-      return EFI_NOT_FOUND;
-    }
-
-    MemoryBottom     = ResourceHob->PhysicalStart + ResourceHob->ResourceLength - MinimalNeededSize;
-    FreeMemoryBottom = MemoryBottom;
-    FreeMemoryTop    = ResourceHob->PhysicalStart + ResourceHob->ResourceLength;
-    MemoryTop        = FreeMemoryTop;
+  Status = FindFreeMemoryFromResourceDescriptorHob (
+              Hob,
+              MinimalNeededSize,
+              &FreeMemoryBottom,
+              &FreeMemoryTop,
+              &MemoryBottom,
+              &MemoryTop
+            );
+  if (EFI_ERROR (Status)) {
+    return Status;
   }
   HobConstructor ((VOID *) (UINTN) MemoryBottom, (VOID *) (UINTN) MemoryTop, (VOID *) (UINTN) FreeMemoryBottom, (VOID *) (UINTN) FreeMemoryTop);
   //
