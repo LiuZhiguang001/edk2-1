@@ -11,14 +11,15 @@
 #include <Guid/MemoryTypeInformation.h>
 #include <Guid/AcpiBoardInfoGuid.h>
 #include <Guid/BootManagerMenu.h>
+#include <UniversalPayload/MemoryMap.h>
 
 #define ROW_LIMITER  16
 
 typedef
 EFI_STATUS
 (*HOB_PRINT_HANDLER) (
-  IN  VOID    *Hob,
-  IN  UINT16  HobLength
+  IN  VOID   *Hob,
+  IN  UINT16 HobLength
   );
 
 typedef struct {
@@ -60,8 +61,8 @@ CHAR8  *mResource_Type_List[] = {
 typedef
 EFI_STATUS
 (*GUID_HOB_PRINT) (
-  IN  UINT8   *HobRaw,
-  IN  UINT16  HobLength
+  IN  UINT8  *HobRaw,
+  IN  UINT16 HobLength
   );
 
 typedef struct {
@@ -83,8 +84,8 @@ typedef struct {
 **/
 EFI_STATUS
 PrintHex (
-  IN  UINT8   *DataStart,
-  IN  UINT16  DataSize
+  IN  UINT8  *DataStart,
+  IN  UINT16 DataSize
   )
 {
   UINTN  Index1;
@@ -114,8 +115,8 @@ PrintHex (
 **/
 EFI_STATUS
 PrintHandOffHob (
-  IN  VOID    *HobStart,
-  IN  UINT16  HobLength
+  IN  VOID   *HobStart,
+  IN  UINT16 HobLength
   )
 {
   EFI_PEI_HOB_POINTERS  Hob;
@@ -139,8 +140,8 @@ PrintHandOffHob (
 **/
 EFI_STATUS
 PrintMemoryAllocationHob (
-  IN  VOID    *HobStart,
-  IN  UINT16  HobLength
+  IN  VOID   *HobStart,
+  IN  UINT16 HobLength
   )
 {
   EFI_PEI_HOB_POINTERS  Hob;
@@ -177,8 +178,8 @@ PrintMemoryAllocationHob (
 **/
 EFI_STATUS
 PrintResourceDiscriptorHob (
-  IN  VOID    *HobStart,
-  IN  UINT16  HobLength
+  IN  VOID   *HobStart,
+  IN  UINT16 HobLength
   )
 {
   EFI_PEI_HOB_POINTERS  Hob;
@@ -207,8 +208,8 @@ PrintResourceDiscriptorHob (
 **/
 EFI_STATUS
 PrintAcpiGuidHob (
-  IN  UINT8   *HobRaw,
-  IN  UINT16  HobLength
+  IN  UINT8  *HobRaw,
+  IN  UINT16 HobLength
   )
 {
   UNIVERSAL_PAYLOAD_ACPI_TABLE  *AcpiTableHob;
@@ -230,8 +231,8 @@ PrintAcpiGuidHob (
 **/
 EFI_STATUS
 PrintSerialGuidHob (
-  IN  UINT8   *HobRaw,
-  IN  UINT16  HobLength
+  IN  UINT8  *HobRaw,
+  IN  UINT16 HobLength
   )
 {
   UNIVERSAL_PAYLOAD_SERIAL_PORT_INFO  *SerialPortInfo;
@@ -255,8 +256,8 @@ PrintSerialGuidHob (
 **/
 EFI_STATUS
 PrintSmbios3GuidHob (
-  IN  UINT8   *HobRaw,
-  IN  UINT16  HobLength
+  IN  UINT8  *HobRaw,
+  IN  UINT16 HobLength
   )
 {
   UNIVERSAL_PAYLOAD_SMBIOS_TABLE  *SmBiosTable;
@@ -278,8 +279,8 @@ PrintSmbios3GuidHob (
 **/
 EFI_STATUS
 PrintSmbiosTablGuidHob (
-  IN  UINT8   *HobRaw,
-  IN  UINT16  HobLength
+  IN  UINT8  *HobRaw,
+  IN  UINT16 HobLength
   )
 {
   UNIVERSAL_PAYLOAD_SMBIOS_TABLE  *SmBiosTable;
@@ -301,8 +302,8 @@ PrintSmbiosTablGuidHob (
 **/
 EFI_STATUS
 PrintAcpiBoardInfoGuidHob (
-  IN  UINT8   *HobRaw,
-  IN  UINT16  HobLength
+  IN  UINT8  *HobRaw,
+  IN  UINT16 HobLength
   )
 {
   ACPI_BOARD_INFO  *AcpBoardInfo;
@@ -331,17 +332,17 @@ PrintAcpiBoardInfoGuidHob (
 **/
 EFI_STATUS
 PrintPciRootBridgeInfoGuidHob (
-  IN  UINT8   *HobRaw,
-  IN  UINT16  HobLength
+  IN  UINT8  *HobRaw,
+  IN  UINT16 HobLength
   )
 {
   UNIVERSAL_PAYLOAD_PCI_ROOT_BRIDGES  *PciRootBridges;
   UINTN                               Index;
   UINTN                               Length;
 
-  Index          = 0;
+  Index = 0;
   PciRootBridges = (UNIVERSAL_PAYLOAD_PCI_ROOT_BRIDGES *)GET_GUID_HOB_DATA (HobRaw);
-  Length         = sizeof (UNIVERSAL_PAYLOAD_PCI_ROOT_BRIDGES) + PciRootBridges->Count * sizeof (UNIVERSAL_PAYLOAD_PCI_ROOT_BRIDGE);
+  Length = sizeof (UNIVERSAL_PAYLOAD_PCI_ROOT_BRIDGES) + PciRootBridges->Count * sizeof (UNIVERSAL_PAYLOAD_PCI_ROOT_BRIDGE);
   ASSERT (HobLength >= Length);
   DEBUG ((DEBUG_INFO, "   Revision         = 0x%x\n", PciRootBridges->Header.Revision));
   DEBUG ((DEBUG_INFO, "   Length           = 0x%x\n", PciRootBridges->Header.Length));
@@ -389,8 +390,8 @@ PrintPciRootBridgeInfoGuidHob (
 **/
 EFI_STATUS
 PrintExtraDataGuidHob (
-  IN  UINT8   *HobRaw,
-  IN  UINT16  HobLength
+  IN  UINT8  *HobRaw,
+  IN  UINT16 HobLength
   )
 {
   UNIVERSAL_PAYLOAD_EXTRA_DATA  *ExtraData;
@@ -424,8 +425,8 @@ PrintExtraDataGuidHob (
 **/
 EFI_STATUS
 PrintMemoryTypeInfoGuidHob (
-  IN  UINT8   *HobRaw,
-  IN  UINT16  HobLength
+  IN  UINT8  *HobRaw,
+  IN  UINT16 HobLength
   )
 {
   EFI_MEMORY_TYPE_INFORMATION  *MemoryTypeInfo;
@@ -445,8 +446,8 @@ PrintMemoryTypeInfoGuidHob (
 **/
 EFI_STATUS
 PrintBootManagerMenuGuidHob (
-  IN  UINT8   *HobRaw,
-  IN  UINT16  HobLength
+  IN  UINT8  *HobRaw,
+  IN  UINT16 HobLength
   )
 {
   UNIVERSAL_PAYLOAD_BOOT_MANAGER_MENU  *BootManagerMenuFile;
@@ -456,6 +457,45 @@ PrintBootManagerMenuGuidHob (
   DEBUG ((DEBUG_INFO, "   Revision  = 0x%x\n", BootManagerMenuFile->Header.Revision));
   DEBUG ((DEBUG_INFO, "   Length    = 0x%x\n", BootManagerMenuFile->Header.Length));
   DEBUG ((DEBUG_INFO, "   FileName  = %g\n", &BootManagerMenuFile->FileName));
+  return EFI_SUCCESS;
+}
+
+/**
+  Print the information in gUniversalPayloadMemoryMapGuid.
+  @param[in] HobRaw          A pointer to the start of gUniversalPayloadMemoryMapGuid HOB.
+  @param[in] HobLength       The size of the data buffer.
+  @retval EFI_SUCCESS        If it completed successfully.
+**/
+EFI_STATUS
+PrintMemoryMapGuidHob (
+  IN  UINT8  *HobRaw,
+  IN  UINT16 HobLength
+  )
+{
+  UNIVERSAL_PAYLOAD_MEMORY_MAP  *MemoryMapHob;
+  EFI_MEMORY_DESCRIPTOR         *MemoryMap;
+  UINTN                         Index;
+
+  MemoryMapHob = (UNIVERSAL_PAYLOAD_MEMORY_MAP *)GET_GUID_HOB_DATA (HobRaw);
+  ASSERT (HobLength >= sizeof (*MemoryMapHob));
+  DEBUG ((DEBUG_INFO, "   Revision       = 0x%x\n", MemoryMapHob->Header.Revision));
+  DEBUG ((DEBUG_INFO, "   Length         = 0x%x\n", MemoryMapHob->Header.Length));
+  DEBUG ((DEBUG_INFO, "   Count          = %d\n",   MemoryMapHob->Count));
+  DEBUG ((DEBUG_INFO, "   DescriptorSize = %d\n",   MemoryMapHob->DescriptorSize));
+
+  for (Index = 0; Index < MemoryMapHob->Count; Index++) {
+    MemoryMap = (EFI_MEMORY_DESCRIPTOR *)((UINT8 *)(MemoryMapHob->MemoryMap) + Index * MemoryMapHob->DescriptorSize);
+    DEBUG ((
+      DEBUG_ERROR,
+      "   MemoryMap[%04d] [0x%lx, 0x%lx, as: %a with attribute 0x%lx]\n",
+      Index,
+      MemoryMap->PhysicalStart,
+      MemoryMap->PhysicalStart + MemoryMap->NumberOfPages * EFI_PAGE_SIZE,
+      mMemoryTypeStr[MemoryMap->Type],
+      MemoryMap->Attribute
+      ));
+  }
+
   return EFI_SUCCESS;
 }
 
@@ -472,7 +512,8 @@ GUID_HOB_PRINT_HANDLE  GuidHobPrintHandleTable[] = {
   { &gUniversalPayloadPciRootBridgeInfoGuid, PrintPciRootBridgeInfoGuidHob, "gUniversalPayloadPciRootBridgeInfoGuid(Pci Guid)"            },
   { &gEfiMemoryTypeInformationGuid,          PrintMemoryTypeInfoGuidHob,    "gEfiMemoryTypeInformationGuid(Memory Type Information Guid)" },
   { &gUniversalPayloadExtraDataGuid,         PrintExtraDataGuidHob,         "gUniversalPayloadExtraDataGuid(PayLoad Extra Data Guid)"     },
-  { &gEdkiiBootManagerMenuFileGuid,          PrintBootManagerMenuGuidHob,   "gEdkiiBootManagerMenuFileGuid(Boot Manager Menu File Guid)"  }
+  { &gEdkiiBootManagerMenuFileGuid,          PrintBootManagerMenuGuidHob,   "gEdkiiBootManagerMenuFileGuid(Boot Manager Menu File Guid)"  },
+  { &gUniversalPayloadMemoryMapGuid,         PrintMemoryMapGuidHob,         "gUniversalPayloadMemoryMapGuid(Memory map)"                  }
 };
 
 /**
@@ -483,8 +524,8 @@ GUID_HOB_PRINT_HANDLE  GuidHobPrintHandleTable[] = {
 **/
 EFI_STATUS
 PrintGuidHob (
-  IN  VOID    *HobStart,
-  IN  UINT16  HobLength
+  IN  VOID   *HobStart,
+  IN  UINT16 HobLength
   )
 {
   EFI_PEI_HOB_POINTERS  Hob;
@@ -515,8 +556,8 @@ PrintGuidHob (
 **/
 EFI_STATUS
 PrintFvHob (
-  IN  VOID    *HobStart,
-  IN  UINT16  HobLength
+  IN  VOID   *HobStart,
+  IN  UINT16 HobLength
   )
 {
   EFI_PEI_HOB_POINTERS  Hob;
@@ -537,8 +578,8 @@ PrintFvHob (
 **/
 EFI_STATUS
 PrintCpuHob (
-  IN  VOID    *HobStart,
-  IN  UINT16  HobLength
+  IN  VOID   *HobStart,
+  IN  UINT16 HobLength
   )
 {
   EFI_PEI_HOB_POINTERS  Hob;
@@ -559,8 +600,8 @@ PrintCpuHob (
 **/
 EFI_STATUS
 PrintMemoryPoolHob (
-  IN  VOID    *HobStart,
-  IN  UINT16  HobLength
+  IN  VOID   *HobStart,
+  IN  UINT16 HobLength
   )
 {
   return EFI_SUCCESS;
@@ -574,8 +615,8 @@ PrintMemoryPoolHob (
 **/
 EFI_STATUS
 PrintFv2Hob (
-  IN  VOID    *HobStart,
-  IN  UINT16  HobLength
+  IN  VOID   *HobStart,
+  IN  UINT16 HobLength
   )
 {
   EFI_PEI_HOB_POINTERS  Hob;
@@ -598,8 +639,8 @@ PrintFv2Hob (
 **/
 EFI_STATUS
 PrintCapsuleHob (
-  IN  VOID    *HobStart,
-  IN  UINT16  HobLength
+  IN  VOID   *HobStart,
+  IN  UINT16 HobLength
   )
 {
   EFI_PEI_HOB_POINTERS  Hob;
@@ -620,8 +661,8 @@ PrintCapsuleHob (
 **/
 EFI_STATUS
 PrintFv3Hob (
-  IN  VOID    *HobStart,
-  IN  UINT16  HobLength
+  IN  VOID   *HobStart,
+  IN  UINT16 HobLength
   )
 {
   EFI_PEI_HOB_POINTERS  Hob;
@@ -661,7 +702,7 @@ HOB_PRINT_HANDLER_TABLE  mHobHandles[] = {
 **/
 VOID
 PrintHob (
-  IN CONST VOID  *HobStart
+  IN CONST VOID *HobStart
   )
 {
   EFI_PEI_HOB_POINTERS  Hob;
