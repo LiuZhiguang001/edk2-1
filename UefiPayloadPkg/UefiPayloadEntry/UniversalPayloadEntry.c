@@ -25,6 +25,29 @@
 
 extern VOID  *mHobList;
 
+typedef struct {
+  UINT64   Attribute;
+  UINT64   Capability;
+} ATTRIBUTE_CONVERSION_ENTRY;
+
+ATTRIBUTE_CONVERSION_ENTRY mAttributeConversionTable[] = {
+  { EFI_RESOURCE_ATTRIBUTE_UNCACHEABLE,             EFI_MEMORY_UC           },
+  { EFI_RESOURCE_ATTRIBUTE_UNCACHED_EXPORTED,       EFI_MEMORY_UCE          },
+  { EFI_RESOURCE_ATTRIBUTE_WRITE_COMBINEABLE,       EFI_MEMORY_WC           },
+  { EFI_RESOURCE_ATTRIBUTE_WRITE_THROUGH_CACHEABLE, EFI_MEMORY_WT           },
+  { EFI_RESOURCE_ATTRIBUTE_WRITE_BACK_CACHEABLE,    EFI_MEMORY_WB           },
+  { EFI_RESOURCE_ATTRIBUTE_READ_PROTECTABLE,        EFI_MEMORY_RP           },
+  { EFI_RESOURCE_ATTRIBUTE_WRITE_PROTECTABLE,       EFI_MEMORY_WP           },
+  { EFI_RESOURCE_ATTRIBUTE_EXECUTION_PROTECTABLE,   EFI_MEMORY_XP           },
+  { EFI_RESOURCE_ATTRIBUTE_READ_ONLY_PROTECTABLE,   EFI_MEMORY_RO           },
+  { EFI_RESOURCE_ATTRIBUTE_PRESENT,                 EFI_MEMORY_PRESENT      },
+  { EFI_RESOURCE_ATTRIBUTE_INITIALIZED,             EFI_MEMORY_INITIALIZED  },
+  { EFI_RESOURCE_ATTRIBUTE_TESTED,                  EFI_MEMORY_TESTED       },
+  { EFI_RESOURCE_ATTRIBUTE_PERSISTABLE,             EFI_MEMORY_NV           },
+  { EFI_RESOURCE_ATTRIBUTE_MORE_RELIABLE,           EFI_MEMORY_MORE_RELIABLE},
+  { 0,                                              0                       }
+};
+
 /**
   Print all HOBs info from the HOB list.
 
@@ -34,6 +57,138 @@ VOID
 PrintHob (
   IN CONST VOID  *HobStart
   );
+
+
+UINT64
+ConvertCapabilitiesToResourceDescriptorHobAttributes (
+  UINT64               Capabilities
+  )
+{
+  UINT64                      Attributes;
+  ATTRIBUTE_CONVERSION_ENTRY  *Conversion;
+
+  for (Attributes = 0, Conversion = mAttributeConversionTable; Conversion->Attribute != 0; Conversion++) {
+    if (Capabilities & Conversion->Capability) {
+      Attributes |= Conversion->Attribute;
+    }
+  }
+
+  return Attributes;
+}
+
+EFI_RESOURCE_TYPE
+ConvertEfiMemoryTypeToResourceDescriptorHobResourceType (
+  EFI_MEMORY_TYPE               Type
+  )
+{
+  switch (Type) {
+  case EfiConventionalMemory:
+    return EFI_RESOURCE_SYSTEM_MEMORY;
+
+  case EfiReservedMemoryType:
+    return EFI_RESOURCE_MEMORY_RESERVED;
+
+  default:
+    return EFI_RESOURCE_SYSTEM_MEMORY;
+  }
+}
+
+/**
+  Function to compare 2 Memory Allocation Hob.
+
+  @param[in] Buffer1            pointer to the firstMemory Allocation Hob to compare
+  @param[in] Buffer2            pointer to the second Memory Allocation Hob to compare
+
+  @retval 0                     Buffer1 equal to Buffer2
+  @retval <0                    Buffer1 is less than Buffer2
+  @retval >0                    Buffer1 is greater than Buffer2
+**/
+INTN
+EFIAPI
+MemoryMapTableCompare (
+  IN CONST VOID             *Buffer1,
+  IN CONST VOID             *Buffer2
+  )
+{
+  EFI_MEMORY_DESCRIPTOR *Left;
+  EFI_MEMORY_DESCRIPTOR *Right;
+
+  Left  = *(EFI_MEMORY_DESCRIPTOR**)Buffer1;
+  Right = *(EFI_MEMORY_DESCRIPTOR**)Buffer2;
+
+  if (Left->PhysicalStart == Right->PhysicalStart) {
+    return 0;
+  } else if (Left->PhysicalStart > Right->PhysicalStart) {
+    return 1;
+  } else {
+    return -1;
+  }
+}
+
+/**
+  Create resource Hob that Uefi can use based on Memory Map Table.
+  This function assume the memory map table is sorted, and doesn't have overlap with each other.
+  Also this function assume the memory map table only contains physical memory range.
+
+  @retval      It will not return if SUCCESS, and return error when passing bootloader parameter.
+**/
+EFI_STATUS
+EFIAPI
+CreateHobsBasedOnMemoryMap (
+  IN UNIVERSAL_PAYLOAD_MEMORY_MAP                    *MemoryMapHob
+  )
+{
+
+  EFI_PEI_HOB_POINTERS             Hob;
+  UINTN                            Index;
+  EFI_MEMORY_DESCRIPTOR            *MemMapTable;
+  EFI_MEMORY_DESCRIPTOR            *SortedMemMapTable;
+  EFI_MEMORY_DESCRIPTOR            SortBuffer;
+  EFI_HOB_RESOURCE_DESCRIPTOR      *ResourceDescriptor;
+
+  SortedMemMapTable = (VOID *)(UINTN)AllocatePages (EFI_SIZE_TO_PAGES (sizeof (EFI_MEMORY_DESCRIPTOR) * MemoryMapHob->Count));
+
+  QuickSort (SortedMemMapTable, MemoryMapHob->Count, sizeof (EFI_MEMORY_DESCRIPTOR), MemoryMapTableCompare, &SortBuffer);
+
+  for (Index = 0; Index < MemoryMapHob->Count; Index++) {
+    MemMapTable = ((EFI_MEMORY_DESCRIPTOR *)MemoryMapHob->MemoryMap) + Index;
+    Hob.Raw = GetHobList();
+    ResourceDescriptor = NULL;
+    while (!END_OF_HOB_LIST (Hob)) {
+      if (Hob.Header->HobType == EFI_HOB_TYPE_RESOURCE_DESCRIPTOR) {
+        ResourceDescriptor = Hob.ResourceDescriptor;
+      }
+      Hob.Raw = GET_NEXT_HOB (Hob);
+    }
+    //
+    // Every Memory map range should be contained in one Resource Descriptor Hob.
+    //
+    if (ResourceDescriptor != NULL &&
+        ResourceDescriptor->ResourceAttribute == ConvertCapabilitiesToResourceDescriptorHobAttributes (MemMapTable->Attribute) &&
+        ResourceDescriptor->ResourceType == ConvertEfiMemoryTypeToResourceDescriptorHobResourceType (MemMapTable->Type) &&
+        ResourceDescriptor->PhysicalStart + ResourceDescriptor->ResourceLength == MemMapTable->PhysicalStart) {
+      ResourceDescriptor->ResourceLength += EFI_PAGES_TO_SIZE (MemMapTable->NumberOfPages);
+    } else {
+      BuildResourceDescriptorHob (
+        ConvertEfiMemoryTypeToResourceDescriptorHobResourceType (MemMapTable->Type),
+        ConvertCapabilitiesToResourceDescriptorHobAttributes (MemMapTable->Attribute),
+        MemMapTable->PhysicalStart,
+        EFI_PAGES_TO_SIZE (MemMapTable->NumberOfPages)
+      );
+    }
+    //
+    // Every used Memory map range should be contained in Memory Allocation Hob.
+    //
+    if (MemMapTable->Type != EfiConventionalMemory && MemMapTable->Type != EfiReservedMemoryType) {
+      BuildMemoryAllocationHob (
+        MemMapTable->PhysicalStart,
+        EFI_PAGES_TO_SIZE (MemMapTable->NumberOfPages),
+        MemMapTable->Type
+      );
+    }
+  }
+  return EFI_SUCCESS;
+}
 
 /**
   Some bootloader may pass a pcd database, and UPL also contain a PCD database.
@@ -352,6 +507,60 @@ FindFreeMemoryFromResourceDescriptorHob (
   return EFI_SUCCESS;
 }
 
+EFI_STATUS
+FindFreeMemoryFromMemoryMapTable (
+  IN  EFI_PEI_HOB_POINTERS             HobStart,
+  IN  UINTN                            MinimalNeededSize,
+  OUT EFI_PHYSICAL_ADDRESS             *FreeMemoryBottom,
+  OUT EFI_PHYSICAL_ADDRESS             *FreeMemoryTop,
+  OUT EFI_PHYSICAL_ADDRESS             *MemoryBottom,
+  OUT EFI_PHYSICAL_ADDRESS             *MemoryTop
+  )
+{
+  VOID                             *Hob;
+  UNIVERSAL_PAYLOAD_MEMORY_MAP     *MemoryMapHob;
+  EFI_MEMORY_DESCRIPTOR            *MemoryMap;
+  UINTN                            FindIndex;
+  UINTN                            Index;
+  //EFI_PHYSICAL_ADDRESS             TODO
+
+  Hob = GetNextGuidHob (&gUniversalPayloadMemoryMapGuid, HobStart.Raw);
+  if (Hob == NULL) {
+    return EFI_NOT_FOUND;
+  }
+  MemoryMapHob = (UNIVERSAL_PAYLOAD_MEMORY_MAP *) GET_GUID_HOB_DATA (Hob);
+  FindIndex = MemoryMapHob->Count;
+  for (Index = 0; Index < MemoryMapHob->Count; Index++) {
+    MemoryMap = &MemoryMapHob->MemoryMap[Index];
+
+    //
+    // Skip above 4G memory
+    //
+    if (MemoryMap->PhysicalStart + EFI_PAGES_TO_SIZE (MemoryMap->NumberOfPages) > BASE_4GB) {
+      continue;
+    }
+    if (MemoryMap->Type != EfiConventionalMemory || EFI_PAGES_TO_SIZE (MemoryMap->NumberOfPages) < MinimalNeededSize) {
+      continue;
+    }
+    if ((MemoryMap->Attribute & (EFI_MEMORY_PRESENT | EFI_MEMORY_INITIALIZED | EFI_MEMORY_TESTED)) == (EFI_MEMORY_PRESENT | EFI_MEMORY_INITIALIZED | EFI_MEMORY_TESTED)) {
+      FindIndex = Index;
+    }
+  }
+  if (FindIndex == MemoryMapHob->Count) {
+    return EFI_NOT_FOUND;
+  }
+
+  MemoryMap = ((EFI_MEMORY_DESCRIPTOR *)MemoryMapHob->MemoryMap) + FindIndex;
+  *MemoryTop        = EFI_PAGES_TO_SIZE (MemoryMap->NumberOfPages) + MemoryMap->PhysicalStart;
+  *FreeMemoryTop    = *MemoryTop;
+  *MemoryBottom     = *MemoryTop - MinimalNeededSize;
+  *FreeMemoryBottom = *MemoryBottom;
+  return EFI_SUCCESS;
+}
+
+
+
+
 /**
   It will build HOBs based on information from bootloaders.
 
@@ -374,23 +583,36 @@ BuildHobs (
   EFI_PHYSICAL_ADDRESS             FreeMemoryTop;
   EFI_PHYSICAL_ADDRESS             MemoryBottom;
   EFI_PHYSICAL_ADDRESS             MemoryTop;
-
   UNIVERSAL_PAYLOAD_EXTRA_DATA     *ExtraData;
   UINT8                            *GuidHob;
   EFI_HOB_FIRMWARE_VOLUME          *FvHob;
   UNIVERSAL_PAYLOAD_ACPI_TABLE     *AcpiTable;
   ACPI_BOARD_INFO                  *AcpiBoardInfo;
+  VOID                             *MemoryMapHob;
 
   Hob.Raw = (UINT8 *) BootloaderParameter;
   MinimalNeededSize = FixedPcdGet32 (PcdSystemMemoryUefiRegionSize);
-  Status = FindFreeMemoryFromResourceDescriptorHob (
-              Hob,
-              MinimalNeededSize,
-              &FreeMemoryBottom,
-              &FreeMemoryTop,
-              &MemoryBottom,
-              &MemoryTop
-            );
+  MemoryMapHob = GetNextGuidHob (&gUniversalPayloadMemoryMapGuid, Hob.Raw);
+  if (MemoryMapHob == NULL) {
+    Status = FindFreeMemoryFromResourceDescriptorHob (
+               Hob,
+               MinimalNeededSize,
+               &FreeMemoryBottom,
+               &FreeMemoryTop,
+               &MemoryBottom,
+               &MemoryTop
+             );
+
+  } else {
+    Status = FindFreeMemoryFromMemoryMapTable (
+               Hob,
+               MinimalNeededSize,
+               &FreeMemoryBottom,
+               &FreeMemoryTop,
+               &MemoryBottom,
+               &MemoryTop
+             );
+  }
   if (EFI_ERROR (Status)) {
     return Status;
   }
@@ -400,6 +622,13 @@ BuildHobs (
   //
   // From now on, mHobList will point to the new Hob range.
   //
+
+  //
+  // Create resource Hob that Uefi can use based on Memory Map Table.
+  //
+  if (MemoryMapHob != NULL) {
+    CreateHobsBasedOnMemoryMap ((UNIVERSAL_PAYLOAD_MEMORY_MAP *) GET_GUID_HOB_DATA (MemoryMapHob));
+  }
 
   //
   // Create an empty FvHob for the DXE FV that contains DXE core.
