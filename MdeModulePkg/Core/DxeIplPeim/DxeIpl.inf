@@ -77,6 +77,7 @@
   DebugAgentLib
   PeiServicesTablePointerLib
   PerformanceLib
+  MemoryMapLib
 
 [LibraryClasses.ARM, LibraryClasses.AARCH64]
   ArmMmuLib
@@ -113,6 +114,7 @@
   gLzmaCustomDecompressGuid
   gMemoryStatusCodeRecordGuid
   gPcdDataBaseHobGuid
+  gUniversalPayloadMemoryMapGuid
 
 [FeaturePcd.IA32]
   gEfiMdeModulePkgTokenSpaceGuid.PcdDxeIplSwitchToLongMode      ## CONSUMES
