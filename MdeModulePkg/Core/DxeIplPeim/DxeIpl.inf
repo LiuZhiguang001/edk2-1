@@ -75,6 +75,7 @@
   DebugAgentLib
   PeiServicesTablePointerLib
   PerformanceLib
+  MemoryMapLib
 
 [LibraryClasses.ARM, LibraryClasses.AARCH64]
   ArmMmuLib
@@ -98,6 +99,7 @@
   ## SOMETIMES_CONSUMES ## Variable:L"MemoryTypeInformation"
   ## SOMETIMES_PRODUCES ## HOB
   gEfiMemoryTypeInformationGuid
+  gUniversalPayloadMemoryMapGuid
 
 [FeaturePcd.IA32]
   gEfiMdeModulePkgTokenSpaceGuid.PcdDxeIplSwitchToLongMode      ## CONSUMES
