@@ -404,7 +404,6 @@ BuildMemMap (
   MemoryMapHob->Header.Revision = UNIVERSAL_PAYLOAD_MEMORY_MAP_REVISION;
   MemoryMapHob->Header.Length = sizeof (UNIVERSAL_PAYLOAD_MEMORY_MAP);
   
-
   Hob.HandoffInformationTable = (EFI_HOB_HANDOFF_INFO_TABLE *) GetFirstHob(EFI_HOB_TYPE_HANDOFF);
   PhitHobStart = Hob.HandoffInformationTable->EfiMemoryBottom;
 
@@ -412,11 +411,9 @@ BuildMemMap (
   Hob.Raw = GetHobList();
   while (!END_OF_HOB_LIST (Hob)) {
     if (Hob.Header->HobType == EFI_HOB_TYPE_RESOURCE_DESCRIPTOR) {
-      if (Hob.ResourceDescriptor->ResourceType != EFI_RESOURCE_SYSTEM_MEMORY && Hob.ResourceDescriptor->ResourceType != EFI_RESOURCE_MEMORY_RESERVED) {
-        Hob.Raw = GET_NEXT_HOB (Hob);
-        continue;
+      if (Hob.ResourceDescriptor->ResourceType == EFI_RESOURCE_SYSTEM_MEMORY || Hob.ResourceDescriptor->ResourceType == EFI_RESOURCE_MEMORY_RESERVED) {
+        ResourceHobCount++;
       }
-      ResourceHobCount++;
     }
     Hob.Raw = GET_NEXT_HOB (Hob);
   }
@@ -426,23 +423,24 @@ BuildMemMap (
   Hob.Raw = GetHobList();
   while (!END_OF_HOB_LIST (Hob)) {
     if (Hob.Header->HobType == EFI_HOB_TYPE_RESOURCE_DESCRIPTOR) {
-      if (Hob.ResourceDescriptor->ResourceType != EFI_RESOURCE_SYSTEM_MEMORY && Hob.ResourceDescriptor->ResourceType != EFI_RESOURCE_MEMORY_RESERVED) {
-        Hob.Raw = GET_NEXT_HOB (Hob);
-        continue;
+      if (Hob.ResourceDescriptor->ResourceType == EFI_RESOURCE_SYSTEM_MEMORY || Hob.ResourceDescriptor->ResourceType == EFI_RESOURCE_MEMORY_RESERVED) {
+        ResourceDescriptorHobBuffer[Index].ResourceHob = Hob.ResourceDescriptor;
+        if ((PhitHobStart >= Hob.ResourceDescriptor->PhysicalStart) &&
+          (PhitHobStart <= (Hob.ResourceDescriptor->PhysicalStart + Hob.ResourceDescriptor->ResourceLength))) {
+          ResourceDescriptorHobBuffer[Index].ContainingHobList = TRUE;
+        } else {
+          ResourceDescriptorHobBuffer[Index].ContainingHobList = FALSE;
+        }
+        Index++;
       }
-      ResourceDescriptorHobBuffer[Index].ResourceHob = Hob.ResourceDescriptor;
-      if ((PhitHobStart >= Hob.ResourceDescriptor->PhysicalStart) &&
-         (PhitHobStart <= (Hob.ResourceDescriptor->PhysicalStart + Hob.ResourceDescriptor->ResourceLength))) {
-        ResourceDescriptorHobBuffer[Index].ContainingHobList = TRUE;
-      } else {
-        ResourceDescriptorHobBuffer[Index].ContainingHobList = FALSE;
-      }
-      Index++;
     }
     Hob.Raw = GET_NEXT_HOB (Hob);
   }
   PerformQuickSort (ResourceDescriptorHobBuffer, ResourceHobCount, sizeof (RESOURCE_DESCRIPTOR_HOB_BUFFER), (SORT_COMPARE) ResourceDescriptorCompare);
 
+  //
+  // Allocate memory needed
+  //
   TotalDestCount = 0;
   TotalDestCountUsed = 0;
   for (Index = 0; Index < ResourceHobCount; Index++) {
@@ -456,7 +454,6 @@ BuildMemMap (
           (Hob.MemoryAllocation->AllocDescriptor.MemoryBaseAddress <= ResourceHobEnd)){
           MemoryAllocationHobCount++;
         }
-        
       }
       Hob.Raw = GET_NEXT_HOB (Hob);
     }
@@ -479,9 +476,8 @@ BuildMemMap (
   }
   MemMapTable =  AllocatePages (EFI_SIZE_TO_PAGES (sizeof (EFI_MEMORY_DESCRIPTOR) * TotalDestCount));
   //
-  // After last line, there should be no code to allocate pool or page.
+  // From now on, there should be no code to allocate pool or page.
   //
-
 
   for (Index = 0; Index < ResourceHobCount; Index++) {
     ResourceHobStart = ResourceDescriptorHobBuffer[Index].ResourceHob->PhysicalStart;

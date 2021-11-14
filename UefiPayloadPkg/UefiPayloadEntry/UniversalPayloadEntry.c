@@ -515,8 +515,9 @@ BuildHobs (
   Hob.Raw = (UINT8 *) BootloaderParameter;
   MinimalNeededSize = FixedPcdGet32 (PcdSystemMemoryUefiRegionSize);
   MemoryMapHob = GetNextGuidHob (&gUniversalPayloadMemoryMapGuid, Hob.Raw);
-  MemoryMapHob = NULL;
+  //MemoryMapHob = NULL;
   if (MemoryMapHob == NULL) {
+    DEBUG ((DEBUG_INFO, "FindFreeMemoryFromResourceDescriptorHob \n"));
     Status = FindFreeMemoryFromResourceDescriptorHob (
                Hob,
                MinimalNeededSize,
@@ -527,6 +528,7 @@ BuildHobs (
              );
 
   } else {
+    DEBUG ((DEBUG_INFO, "FindFreeMemoryFromMemoryMapTable \n"));
     Status = FindFreeMemoryFromMemoryMapTable (
                Hob,
                MinimalNeededSize,
@@ -637,7 +639,7 @@ _ModuleEntryPoint (
   // Build HOB based on information from Bootloader
   Status = BuildHobs (BootloaderParameter, &DxeFv);
   ASSERT_EFI_ERROR (Status);
-
+  PrintHob (GetHobList());
   FixUpPcdDatabase (DxeFv);
   Status = UniversalLoadDxeCore (DxeFv, &DxeCoreEntryPoint);
   ASSERT_EFI_ERROR (Status);

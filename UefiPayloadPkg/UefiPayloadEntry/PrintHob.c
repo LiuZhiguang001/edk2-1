@@ -724,4 +724,28 @@ PrintHob (
     Hob.Raw = GET_NEXT_HOB (Hob);
   }
   DEBUG ((DEBUG_INFO, "There are totally %d Hobs, the End Hob address is %p\n", Count, Hob.Raw));
+
+
+  Hob.Raw = (UINT8 *) HobStart;
+  DEBUG ((DEBUG_INFO, "Print all Memory Hob information from Hob 0x%p\n", Hob.Raw));
+
+  Count = 0;
+  //
+  // Parse the HOB list to see which type it is, and print the information.
+  //
+  while (!END_OF_HOB_LIST (Hob)) {
+    for (Index = 0; Index < ARRAY_SIZE (mHobHandles); Index++) {
+      if (Hob.Header->HobType == mHobHandles[Index].Type) {
+        if (Hob.Header->HobType == EFI_HOB_TYPE_MEMORY_ALLOCATION || Hob.Header->HobType == EFI_HOB_TYPE_RESOURCE_DESCRIPTOR) {
+          DEBUG ((DEBUG_INFO, "Mem HOB[%d]: Type = %a, Offset = 0x%p, Length = 0x%x\n", Count, mHobHandles[Index].Name, (Hob.Raw - (UINT8 *) HobStart), Hob.Header->HobLength));
+          mHobHandles[Index].PrintHandler (Hob.Raw, Hob.Header->HobLength);
+          break;
+        }
+      }
+    }
+    Count++;
+    Hob.Raw = GET_NEXT_HOB (Hob);
+  }
+  DEBUG ((DEBUG_INFO, "There are totally %d Hobs, the End Hob address is %p\n", Count, Hob.Raw));
+
 }
