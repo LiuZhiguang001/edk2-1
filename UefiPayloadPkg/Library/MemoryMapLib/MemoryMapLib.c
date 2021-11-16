@@ -178,7 +178,6 @@ MergeMemDescriptorIntoOne (
   EFI_MEMORY_DESCRIPTOR     *Dest
   ) 
 {
-  EFI_PHYSICAL_ADDRESS     Cursor;
   EFI_PHYSICAL_ADDRESS     End;
   EFI_PHYSICAL_ADDRESS     TempEnd;
   UINTN                    TempDestIndex;
@@ -189,9 +188,8 @@ MergeMemDescriptorIntoOne (
 
   TempDestIndex = 0;
   End = MAX(Back[BackCount-1].PhysicalStart + Back[BackCount-1].NumberOfPages * EFI_PAGE_SIZE,
-    Front[FrontCount-1].PhysicalStart + Front[FrontCount-1].NumberOfPages * EFI_PAGE_SIZE);
-  Cursor = MIN(Back[0].PhysicalStart, Front[0].PhysicalStart);
-  if (Cursor == Front[0].PhysicalStart) {
+          Front[FrontCount-1].PhysicalStart + Front[FrontCount-1].NumberOfPages * EFI_PAGE_SIZE);
+  if (MIN(Back[0].PhysicalStart, Front[0].PhysicalStart) == Front[0].PhysicalStart) {
     CopyMem(&Dest[0], &Front[0], sizeof(EFI_MEMORY_DESCRIPTOR));
   } else {
     CopyMem(&Dest[0], &Back[0], sizeof(EFI_MEMORY_DESCRIPTOR));
@@ -231,6 +229,8 @@ MergeMemDescriptorIntoOne (
     if (TempFrontIndex != FrontCount) {
       TempMin = MIN(Back[TempBackIndex].PhysicalStart + Back[TempBackIndex].NumberOfPages * EFI_PAGE_SIZE, 
         Front[TempFrontIndex].PhysicalStart);
+    } else {
+      TempMin = Back[TempBackIndex].PhysicalStart + Back[TempBackIndex].NumberOfPages * EFI_PAGE_SIZE; 
     }
     if ((Dest[TempDestIndex].Type == Back[TempBackIndex].Type) && (Dest[TempDestIndex].Attribute == Back[TempBackIndex].Attribute)) {
       Dest[TempDestIndex].NumberOfPages = (TempMin - Dest[TempDestIndex].PhysicalStart) / EFI_PAGE_SIZE;
@@ -494,7 +494,7 @@ BuildMemMap (
             Hob2MemDescriptor(&(ResourceDescriptorHobBuffer[Index].FrontBuffer[MemoryAllocationHobCount]), Hob.MemoryAllocation, ResourceHobAttribute);
             //Hob.Header->HobType = EFI_HOB_TYPE_UNUSED;
             MemoryAllocationHobCount++;
-            DEBUG ((DEBUG_ERROR, "[%d] = %d  ", Index, MemoryAllocationHobCount));
+            DEBUG ((DEBUG_ERROR, "[%d] = %d Hob:%x %lx \n", Index, MemoryAllocationHobCount, (UINTN)Hob.Raw, Hob.MemoryAllocation->AllocDescriptor.MemoryBaseAddress));
             ASSERT (MemoryAllocationHobCount <= ResourceDescriptorHobBuffer[Index].FrontCount);
           }
         }
