@@ -52,16 +52,37 @@ GetCbor (
   CborParser parser;
   CborValue value;
   UINT64 result;
+  CborValue next;
+  DEBUG ((EFI_D_ERROR, "Begin to parse Size: %x\n", Size));
   cbor_parser_init(Buffer, Size, 0, &parser, &value);
 
   CborValue element, subMap;
-
+  CborError err;
   UINT8   buf3[30];
   UINTN   size3;
   size3 = 30;
 
   UNIVERSAL_PAYLOAD_SERIAL_PORT_INFO  *Serial;
   Serial = BuildGuidHob (&gUniversalPayloadSerialPortInfoGuid, sizeof (UNIVERSAL_PAYLOAD_SERIAL_PORT_INFO));
+
+  size_t length;
+  DEBUG ((EFI_D_ERROR, "Begin to parse\n"));
+  cbor_value_calculate_string_length(&value, &length);
+  DEBUG ((EFI_D_ERROR, "lengtha: 0x%lx  value = 0x%lx  type: %x, remaining: %x\n", length , (UINT64) &value, value.type, value.remaining));
+
+  cbor_value_copy_text_string	(	&value, (char *) (UINT8 *) buf3, &length,  &next);
+  DEBUG ((EFI_D_ERROR, "the first string: %a\n", (char *) (UINT8 *) buf3));
+  err = cbor_value_advance(&value);
+  cbor_value_calculate_string_length(&value, &length);
+  cbor_value_copy_text_string	(	&value, (char *) (UINT8 *) buf3, &length,  &next);
+  DEBUG ((EFI_D_ERROR, "second string: %a\n", (char *) (UINT8 *) buf3));
+  err = cbor_value_advance(&value);
+
+  cbor_value_get_uint64(&value, &result);
+  DEBUG ((EFI_D_ERROR, "Int value: 0x%lx \n", result ));
+
+  
+  err = cbor_value_advance(&value);
 
   cbor_value_map_find_value (&value,  "RawByte", &element);
   cbor_value_copy_byte_string (&element,  buf3, &size3, NULL);
@@ -100,7 +121,24 @@ GetCbor (
   Serial->Header.Revision = UNIVERSAL_PAYLOAD_SERIAL_PORT_INFO_REVISION;
   Serial->Header.Length = sizeof (UNIVERSAL_PAYLOAD_SERIAL_PORT_INFO);
 
+  CborValue  	Array;
+  DEBUG ((EFI_D_ERROR, "Begin to parse Array\n"));
+  err = cbor_value_advance(&value);
+  cbor_value_enter_container	(	&value, &Array);
 
+  cbor_value_calculate_string_length(&Array, &length);
+  DEBUG ((EFI_D_ERROR, "lengtha: 0x%lx  value = 0x%lx  type: %x, remaining: %x\n", length , (UINT64) &value, value.type, value.remaining));
+
+  cbor_value_copy_text_string	(	&Array, (char *) (UINT8 *) buf3, &length,  &next);
+  DEBUG ((EFI_D_ERROR, "the first string: %a\n", (char *) (UINT8 *) buf3));
+  err = cbor_value_advance(&Array);
+  cbor_value_calculate_string_length(&Array, &length);
+  cbor_value_copy_text_string	(	&Array, (char *) (UINT8 *) buf3, &length,  &next);
+  DEBUG ((EFI_D_ERROR, "second string: %a\n", (char *) (UINT8 *) buf3));
+  err = cbor_value_advance(&Array);
+
+  cbor_value_get_uint64(&Array, &result);
+  DEBUG ((EFI_D_ERROR, "Int value: 0x%lx \n", result ));
 
   
   return 0;

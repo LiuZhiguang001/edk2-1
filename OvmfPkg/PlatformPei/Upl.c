@@ -20,7 +20,7 @@
 #include <OvmfPlatforms.h>
 #include <Library/BaseMemoryLib.h>
 
-#define CBOR_POC
+//#define CBOR_POC
 STATIC UNIVERSAL_PAYLOAD_PCI_ROOT_BRIDGE_APERTURE mNonExistAperture = { MAX_UINT64, 0 };
 
 EFI_STATUS

@@ -389,7 +389,7 @@ _ModuleEntryPoint (
   if (GuidHob == NULL) {
     return EFI_NOT_FOUND;
   }
-  GetCbor (GET_GUID_HOB_DATA (GuidHob), GET_GUID_HOB_DATA_SIZE(GuidHob));
+  //GetCbor (GET_GUID_HOB_DATA (GuidHob), GET_GUID_HOB_DATA_SIZE(GuidHob));
   // Call constructor for all libraries
   ProcessLibraryConstructorList ();
 
