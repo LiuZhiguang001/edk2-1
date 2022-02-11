@@ -21,6 +21,7 @@ typedef struct {
   EFI_PHYSICAL_ADDRESS             CurrentEnd;
   UINT64                           Attribute;
   EFI_MEMORY_TYPE                  MemoryType;
+  BOOLEAN                          NewElement;
 } CURRENT_INFO;
 
 CONST ATTRIBUTE_CONVERSION_ENTRY mAttributeConversionTable[] = {
@@ -254,7 +255,8 @@ AppendEfiMemoryDescriptor (
 {
   if ((CurrentInfo->CurrentEnd == MemoryBaseAddress) &&
       (CurrentInfo->MemoryType == Type) &&
-      (CurrentInfo->Attribute == Attribute))
+      (CurrentInfo->Attribute == Attribute) &&
+      (CurrentInfo->NewElement == FALSE))
   {
     ASSERT (CurrentInfo->Count != 0);
     CurrentInfo->CurrentEnd += EFI_PAGES_TO_SIZE (PageNumber);
@@ -274,6 +276,7 @@ AppendEfiMemoryDescriptor (
     CurrentInfo->Attribute = Attribute;
     CurrentInfo->CurrentEnd = MemoryBaseAddress + EFI_PAGES_TO_SIZE (PageNumber);
   }
+  CurrentInfo->NewElement = FALSE;
 }
 
 /**
@@ -324,9 +327,13 @@ BuildMemoryMap (
     CurrentInfo.CurrentEnd = 0;
     CurrentInfo.MemoryType = EfiMaxMemoryType;
     CurrentInfo.Count = 0;
+    CurrentInfo.NewElement = TRUE;
     CurrentResourceHob = GetSmallestResourceHob (CurrentInfo.CurrentEnd);
     while (CurrentResourceHob != NULL) {
-      CurrentInfo.CurrentEnd = CurrentResourceHob->PhysicalStart;
+      if (CurrentInfo.CurrentEnd != CurrentResourceHob->PhysicalStart) {
+        CurrentInfo.CurrentEnd = CurrentResourceHob->PhysicalStart;
+        CurrentInfo.NewElement = TRUE;
+      }
       ResourceHobStart = CurrentResourceHob->PhysicalStart;
       ResourceHobEnd = CurrentResourceHob->PhysicalStart + CurrentResourceHob->ResourceLength;
       DefaultMemoryAttribute = ConvertResourceDescriptorHobAttributesToCapabilities(CurrentResourceHob->ResourceAttribute);
