@@ -52,7 +52,15 @@ extern EFI_GUID gEfiHobMemoryAllocBspStoreGuid = { 0x564B33CD, 0xC92A, 0x4593, {
 VOID* mHobList;
 
 
-
+void
+myassert(BOOLEAN x) {
+  if (x) {
+    ;
+  }
+  else {
+    printf("will assert\n");
+  }
+}
 
 VOID
 VerifyHob(
@@ -63,20 +71,27 @@ VerifyHob(
 int main ()
 {
   VOID* MemoryMapHob;
-  VOID* oldHoblist;
 
-  CreateHandoffTableHob();
-  CreateRemainingHobs();
+  VOID* HobList1;
+  VOID* HobList2;
+
+  VOID* Range = (VOID*)(UINTN)AllocatePages(EFI_SIZE_TO_PAGES(SIZE_128MB));
+
+  CreateTwoHandoffTableHob(&HobList1, &HobList2, Range);
+
+  mHobList = HobList1;
+  CreateRemainingHobs(HobList1, HobList2);
+
   BuildMemoryMap ();
   PrintHob(mHobList);
   MemoryMapHob = GetNextGuidHob(&gUniversalPayloadMemoryMapGuid, mHobList);
-  oldHoblist = mHobList;
-  CreateHandoffTableHob();
+  
+  mHobList = HobList2;
   CreateHobsBasedOnMemoryMap((UNIVERSAL_PAYLOAD_MEMORY_MAP*)GET_GUID_HOB_DATA(MemoryMapHob));
   printf("After creating hobs based on memory map\n");
-  PrintHob(oldHoblist);
-  PrintHob(mHobList);
-  VerifyHob(oldHoblist, mHobList);
+  PrintHob(HobList1);
+  PrintHob(HobList2);
+  VerifyHob(HobList1, HobList2);
 
   return 0;
 }

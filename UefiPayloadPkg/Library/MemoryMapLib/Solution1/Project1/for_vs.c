@@ -36,8 +36,7 @@
 #include "declarations.h"
 
 #define PAGE_HEAD_PRIVATE_SIGNATURE  SIGNATURE_32 ('P', 'H', 'D', 'R')
-#undef ASSERT
-#define ASSERT assert
+
 
 extern VOID* mHobList;
 #define MAX_DEBUG_MESSAGE_LENGTH 0x100
@@ -99,7 +98,7 @@ DebugVPrint(
 
 	memset(TempFormat1, 0, sizeof(TempFormat1));
 	strcpy_s(TempFormat1, MAX_DEBUG_MESSAGE_LENGTH, Format);
-	Format = strrpc(TempFormat1, "%a", "%lx");
+	Format = strrpc(TempFormat1, "%a", "%s");
 
   vsprintf_s(Buffer, sizeof(Buffer), Format, VaListMarker);
   printf("%s", Buffer);
@@ -196,26 +195,7 @@ AllocatePages(
 	return AllocateAlignedPages(Pages, SIZE_4KB);
 }
 
-VOID*
-EFIAPI
-CreateHandoffTableHob(
-	VOID
-)
-{
-	VOID* MemBottom;
-	VOID* MemTop;
-	VOID* FreeMemBottom;
-	VOID* FreeMemTop;
-	UINT64 Length = SIZE_128KB;
 
-	MemBottom = (VOID*)(UINTN)AllocatePages(EFI_SIZE_TO_PAGES(SIZE_512KB));
-	MemTop = (VOID *)((UINTN)MemBottom + Length);
-	FreeMemBottom = (VOID*)((UINTN)MemBottom + 0x400);
-	FreeMemTop = (VOID*)((UINTN)MemTop - 0x400);
-
-	mHobList = HobConstructor(MemBottom, MemTop, FreeMemBottom, FreeMemTop);
-	return mHobList;
-}
 
 VOID*
 EFIAPI
@@ -267,7 +247,8 @@ IsZeroGuid(
 	LowPartOfGuid = ReadUnaligned64((CONST UINT64*)Guid);
 	HighPartOfGuid = ReadUnaligned64((CONST UINT64*)Guid + 1);
 
-	return (BOOLEAN)(LowPartOfGuid == 0 && HighPartOfGuid == 0);
+	//return (BOOLEAN)(LowPartOfGuid == 0 && HighPartOfGuid == 0);
+	return TRUE;
 }
 
 BOOLEAN

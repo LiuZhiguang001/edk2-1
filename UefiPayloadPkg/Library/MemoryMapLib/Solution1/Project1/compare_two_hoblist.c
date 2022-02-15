@@ -10,14 +10,6 @@
 #include <stdlib.h>
 #include "declarations.h"
 
-#undef ASSERT
-#define ASSERT assert
-
-
-
-
-
-
 typedef
 UINTN
 (*HOB_TYPE_PRINT_HANDLER) (
