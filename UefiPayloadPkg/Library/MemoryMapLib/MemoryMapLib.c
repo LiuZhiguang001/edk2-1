@@ -188,10 +188,10 @@ GetSmallestKMemoryAllocationHob (
     Hob.Raw = GET_NEXT_HOB (Hob.Raw);
   }
 
-  for (Index = 0; Index < MemoryAllocationHobCount; Index++) {
-    DEBUG ((DEBUG_INFO, "GetSmallestKMemoryAllocationHob[%d]: [0x%lx, 0x%lx)\n", Index, MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryBaseAddress,
-    MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryBaseAddress + MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryLength));
-  }
+  //for (Index = 0; Index < MemoryAllocationHobCount; Index++) {
+  //  //DEBUG ((DEBUG_INFO, "GetSmallestKMemoryAllocationHob[%d]: [0x%lx, 0x%lx)\n", Index, MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryBaseAddress,
+  //  MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryBaseAddress + MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryLength));
+  //}
   return MemoryAllocationHobCount;
 }
 
@@ -248,7 +248,7 @@ AppendEfiMemoryDescriptor (
   CURRENT_INFO                  *CurrentInfo,
   EFI_MEMORY_DESCRIPTOR         *MemoryMap,
   EFI_PHYSICAL_ADDRESS          MemoryBaseAddress,
-  UINTN                         PageNumber,
+  UINT64                        PageNumber,
   UINT64                        Attribute,
   EFI_MEMORY_TYPE               Type
   )
@@ -438,5 +438,6 @@ BuildMemoryMap (
   }
 
   MemoryMapHob->Count = CurrentInfo.Count;
+  MemoryMapHob->DescriptorSize = sizeof(EFI_MEMORY_DESCRIPTOR);
   return EFI_SUCCESS;
 }

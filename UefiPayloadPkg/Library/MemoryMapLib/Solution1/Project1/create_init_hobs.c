@@ -13,10 +13,12 @@
 #include <time.h>
 
 #define  SPECIAL_ARRAY_MAX 50
-#define  N_ARRAY_MAX 50
+#define  N_ARRAY_MAX 500
 #define  WHOLE_BASE 0
-#define  WHOLE_LIMIT 0x0000100000000000ULL   //SIZE_16TB
+//#define  WHOLE_LIMIT 0x0000100000000000ULL   //SIZE_16TB
+//#define  WHOLE_LIMIT SIZE_4GB   
 
+#define  WHOLE_LIMIT SIZE_32GB   
 
 extern VOID* mHobList;
 
@@ -109,7 +111,7 @@ GetRandomNumber(
 	for (Index = 0; Index < PreferPointCount; Index++) {
 		if ((PreferPointArray[Index] >= Base) &&
 				(PreferPointArray[Index] <= Limit) &&
-				(PreferPointArray[Index] == ((PreferPointArray[Index] + 1) & (~(AlignSize - 1))))) {
+				(PreferPointArray[Index] == ((PreferPointArray[Index] + AlignSize - 1) & (~(AlignSize - 1))))) {
 			SpecialArray[SpecialCount] = PreferPointArray[Index];
 			SpecialCount++;
 		}
@@ -149,6 +151,11 @@ GetNRandomNumber(
 	**RandomList = x;
 	(*RandomList)++;
 
+	if (x == 0) {
+		AvailibleRandom1 = 0;
+	}
+	else {
+
 
 	AvailibleRandom1 = GetNRandomNumber(
 		(x > (Base + Limit) / 2) ? x + 1 : Base,
@@ -159,6 +166,7 @@ GetNRandomNumber(
 		(N - 1) / 2,
 		RandomList
 	);
+	}
 
 	AvailibleRandom2 = GetNRandomNumber(
 		(x > (Base + Limit) / 2) ? Base : x + 1,
@@ -266,7 +274,8 @@ CreateRandomMemoryHob(
 	UINT64 Limit,
 	UINT64 AlignSize,
 	VOID* HobList1,
-	VOID* HobList2
+	VOID* HobList2,
+	EFI_RESOURCE_TYPE ResourceType
 )
 {
 
@@ -288,7 +297,11 @@ CreateRandomMemoryHob(
 
 	if (ContainHobList2) {
 		type = EfiBootServicesData;
-	}	else {
+	}
+	else if (ResourceType == EFI_RESOURCE_MEMORY_RESERVED) {
+		type = EfiReservedMemoryType;
+	}
+	else {
 		Random = rand() % 5;
 		switch (Random)
 		{
@@ -347,11 +360,16 @@ CreateRandomResourceHob(
 	if (ContainHobList2) {
 		// start[ ... 2n+1 ponit... HobList2 ... 2k+1 point...]end
 		MemoryPointArrayCount = GetNRandomNumber(Base, ((EFI_HOB_HANDOFF_INFO_TABLE*)HobList2)->EfiMemoryBottom, AlignSize, NULL, 0, (rand()% (MemoryPointArrayMaxCount - 1)) / 2 * 2 + 1, &MemoryPointArrayPointer);
+		printf("1will assert 0x%x\n", MemoryPointArrayCount);
 		MemoryPointArrayCount += GetNRandomNumber(((EFI_HOB_HANDOFF_INFO_TABLE*)HobList2)->EfiMemoryTop, Limit, AlignSize, NULL, 0, (rand() % (MemoryPointArrayMaxCount - MemoryPointArrayCount)) / 2 * 2 + 1, &MemoryPointArrayPointer);
+		printf("2will assert 0x%x\n", MemoryPointArrayCount);
 	}
 	else {
 		MemoryPointArrayCount = GetNRandomNumber(Base, Limit, AlignSize, NULL, 0, (rand() % (MemoryPointArrayMaxCount)) / 2 * 2, &MemoryPointArrayPointer);
+		printf("3will assert 0x%x\n", MemoryPointArrayCount);
 	}
+	MemoryPointArrayCount = MemoryPointArrayCount / 2 * 2;
+	printf("will assert 0x%x\n", MemoryPointArrayCount);
 
 	while (MemoryPointArrayCount != 0) {
 		CreateRandomMemoryHob(
@@ -359,7 +377,8 @@ CreateRandomResourceHob(
 			MemoryPointArray[Index + 1],
 			AlignSize,
 			HobList1,
-			HobList2
+			HobList2,
+			ResourceType
 		);
 		Index += 2;
 		MemoryPointArrayCount -= 2;
@@ -375,55 +394,22 @@ CreateRemainingHobs(
 	VOID* HobList2
 )
 {
-	/*
-	int i, n;
-	n = 50;
+	// start[ ... 2n+1 ponit...HobList1..2n point... HobList2 ... 2k+1 point...]end
 	time_t t;
 	srand((unsigned)time(&t));
-
-	UINT64 SpecialArray[SPECIAL_ARRAY_MAX];
-	UINT64 NRandom[SPECIAL_ARRAY_MAX];
-	SpecialArray[0] = 0x3e0;
-	SpecialArray[1] = 0x2e0;
-
-	for (i = 0; i < n; i++) {
-		NRandom[i] = 0;
-		;// printf("%#llx\n", GetRandomNumber(0x100, 0x500, 0x10, SpecialArray, 2));
-	}
-	UINT64* NRandomList;
-	NRandomList = NRandom;
-
-	n = GetNRandomNumber(0x100, 0x10000, 0x10, SpecialArray, 2, 50, &NRandomList);
-
-	for (i = 0; i < n; i++) {
-		
-		 printf("%d:  %#llx\n", i, NRandom[i]);
-	}
-
-
-	//exit(0);
-	
-
-	for (i = 0; i < ARRAY_SIZE(OffenResourceAttribute); i++) {
-		OffenResourceAttribute[i] = RandomResourceAttribute();
-		printf("%d:  %#llx\n", i, OffenResourceAttribute[i]);
-	}
-	//exit(0);
-	*/
-
-	// start[ ... 2n+1 ponit...HobList1..2n point... HobList2 ... 2k+1 point...]end
 	UINT64 SpecialArray[SPECIAL_ARRAY_MAX];
 	SpecialArray[0] = 0x0000000100000000ULL;
 	UINTN   SpecialArrayCount = 1;
 
-	UINTN   ResourcePointArrayMaxCount = 2; // must no larger than ResourcePointArray, and is an even number
+	UINTN   ResourcePointArrayMaxCount = 50; // must no larger than ResourcePointArray, and is an even number
+	UINTN   MemoryPointArrayMaxCount = 50;
 	UINT64  ResourcePointArray[N_ARRAY_MAX];
 	UINT64* ResourcePointArrayPointer;
 	UINTN   ResourcePointArrayCount;
 	UINTN   Index = 0;
 	UINT64  AlignSize = 0x1000;
-	UINTN   MemoryPointArrayMaxCount;
-	MemoryPointArrayMaxCount = 2;
+
+	
 	ResourcePointArrayPointer = ResourcePointArray;
 
 	ResourcePointArrayCount = GetNRandomNumber(WHOLE_BASE, ((EFI_HOB_HANDOFF_INFO_TABLE*)HobList1)->EfiMemoryBottom, AlignSize, SpecialArray, SpecialArrayCount, (rand() % (ResourcePointArrayMaxCount - 1)) / 2 * 2 + 1, &ResourcePointArrayPointer);
@@ -443,24 +429,4 @@ CreateRemainingHobs(
 		Index += 2;
 		ResourcePointArrayCount -= 2;
 	}
-	/*
-
-
-	UINT32 ResourceAttributes = (
-		EFI_RESOURCE_ATTRIBUTE_PRESENT |
-		EFI_RESOURCE_ATTRIBUTE_INITIALIZED |
-		EFI_RESOURCE_ATTRIBUTE_UNCACHEABLE |
-		EFI_RESOURCE_ATTRIBUTE_TESTED |
-		EFI_RESOURCE_ATTRIBUTE_WRITE_COMBINEABLE |
-		EFI_RESOURCE_ATTRIBUTE_WRITE_THROUGH_CACHEABLE |
-		EFI_RESOURCE_ATTRIBUTE_WRITE_BACK_CACHEABLE
-		);
-
-	BuildResourceDescriptorHob(EFI_RESOURCE_SYSTEM_MEMORY, ResourceAttributes, 0x1000, EFI_PAGES_TO_SIZE(4));
-	BuildMemoryAllocationHob(0x2000, EFI_PAGES_TO_SIZE(1), EfiBootServicesData);
-	BuildMemoryAllocationHob(0x3000, EFI_PAGES_TO_SIZE(1), EfiBootServicesData);
-	BuildResourceDescriptorHob(EFI_RESOURCE_SYSTEM_MEMORY, ResourceAttributes, 0x7000, EFI_PAGES_TO_SIZE(7));
-	BuildMemoryAllocationHob(0xb000, EFI_PAGES_TO_SIZE(1), EfiBootServicesData);
-	BuildMemoryAllocationHob(0xd000, EFI_PAGES_TO_SIZE(1), EfiBootServicesData);
-		*/
 }

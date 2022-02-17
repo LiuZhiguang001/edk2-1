@@ -163,11 +163,11 @@ CreateHobsBasedOnMemoryMap (
   EFI_MEMORY_DESCRIPTOR            SortBuffer;
   EFI_HOB_RESOURCE_DESCRIPTOR      *ResourceDescriptor;
 
-  SortedMemMapTable = AllocatePages (EFI_SIZE_TO_PAGES (sizeof (EFI_MEMORY_DESCRIPTOR) * MemoryMapHob->Count));
-  SortedMemMapTable = CopyMem(SortedMemMapTable, MemoryMapHob->MemoryMap, sizeof(EFI_MEMORY_DESCRIPTOR) * MemoryMapHob->Count);
-  QuickSort (SortedMemMapTable, MemoryMapHob->Count, sizeof (EFI_MEMORY_DESCRIPTOR), MemoryMapTableCompare, &SortBuffer); 
+  SortedMemMapTable = AllocatePages (EFI_SIZE_TO_PAGES (MemoryMapHob->DescriptorSize * MemoryMapHob->Count));
+  SortedMemMapTable = CopyMem(SortedMemMapTable, MemoryMapHob->MemoryMap, MemoryMapHob->DescriptorSize * MemoryMapHob->Count);
+  QuickSort (SortedMemMapTable, MemoryMapHob->Count, MemoryMapHob->DescriptorSize, MemoryMapTableCompare, &SortBuffer); 
   for (Index = 0; Index < MemoryMapHob->Count; Index++) {
-    MemMapTable = ((EFI_MEMORY_DESCRIPTOR *)SortedMemMapTable) + Index;
+    MemMapTable = (EFI_MEMORY_DESCRIPTOR *)(((UINT8 *)SortedMemMapTable) + Index * MemoryMapHob->DescriptorSize);
     Hob.Raw = GetHobList();
     ResourceDescriptor = NULL;
     while (!END_OF_HOB_LIST (Hob)) {
@@ -195,7 +195,7 @@ CreateHobsBasedOnMemoryMap (
     //
     // Every used Memory map range should be contained in Memory Allocation Hob.
     //
-    if (MemMapTable->Type != EfiConventionalMemory && MemMapTable->Type != EfiReservedMemoryType) {
+    if (MemMapTable->Type != EfiConventionalMemory) {
       BuildMemoryAllocationHob (
         MemMapTable->PhysicalStart,
         EFI_PAGES_TO_SIZE (MemMapTable->NumberOfPages),
