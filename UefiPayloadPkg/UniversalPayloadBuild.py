@@ -100,6 +100,8 @@ def BuildUniversalPayload(Args, MacroList):
     fp.write(bytearray(upld_info_hdr))
     fp.close()
 
+    shutil.copy (EntryOutputDir, os.path.join(BuildDir, 'UniversalPayloadBackUp.elf'))
+
     #
     # Copy the DXEFV as a section in elf format Universal Payload entry.
     #
