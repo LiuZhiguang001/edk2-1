@@ -19,6 +19,8 @@
 
 
 [Guids]
+  ## Include/UniversalPayload/MemoryMap.h
+  gUniversalPayloadMemoryMapGuid = { 0x60ae3012, 0xea8d, 0x4010, { 0xa9, 0x9f, 0xb7, 0xe2, 0xf2, 0x90, 0x82, 0x55 }}
   #
   ## Defines the token space for the UEFI Payload Package PCDs.
   #

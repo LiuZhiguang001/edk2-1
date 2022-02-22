@@ -6,6 +6,7 @@
 **/
 
 #include "UefiPayloadEntry.h"
+#include "linux.h"
 
 #define MEMORY_ATTRIBUTE_MASK  (EFI_RESOURCE_ATTRIBUTE_PRESENT             |        \
                                        EFI_RESOURCE_ATTRIBUTE_INITIALIZED         | \
@@ -281,6 +282,20 @@ IsHobNeed (
   return TRUE;
 }
 
+EFI_STATUS
+EFIAPI
+BuildMemoryMap (
+  VOID
+  );
+
+
+VOID
+EFIAPI
+LoadLinux(
+  IN  UINT32  BootParam,
+  IN  UINT32  KernelBase
+  );
+
 /**
   It will build HOBs based on information from bootloaders.
 
@@ -395,11 +410,11 @@ BuildHobs (
   GuidHob = GetFirstGuidHob (&gUniversalPayloadExtraDataGuid);
   ASSERT (GuidHob != NULL);
   ExtraData = (UNIVERSAL_PAYLOAD_EXTRA_DATA *)GET_GUID_HOB_DATA (GuidHob);
-  ASSERT (ExtraData->Count == 1);
-  ASSERT (AsciiStrCmp (ExtraData->Entry[0].Identifier, "uefi_fv") == 0);
-
+  ASSERT (ExtraData->Count == 2);
+  ASSERT (AsciiStrCmp (ExtraData->Entry[0].Identifier, "upld.linux") == 0);
+  ASSERT (AsciiStrCmp (ExtraData->Entry[1].Identifier, "upld.initramfs") == 0);
   *DxeFv = (EFI_FIRMWARE_VOLUME_HEADER *)(UINTN)ExtraData->Entry[0].Base;
-  ASSERT ((*DxeFv)->FvLength == ExtraData->Entry[0].Size);
+  //ASSERT ((*DxeFv)->FvLength == ExtraData->Entry[0].Size);
 
   //
   // Create guid hob for acpi board information
@@ -418,6 +433,106 @@ BuildHobs (
   FvHob              = GetFirstHob (EFI_HOB_TYPE_FV);
   FvHob->BaseAddress = (EFI_PHYSICAL_ADDRESS)(UINTN)*DxeFv;
   FvHob->Length      = (*DxeFv)->FvLength;
+
+
+  // Get boot parameter
+
+  struct linux_header *hdr = (struct linux_header *)(UINTN)(ExtraData->Entry[0].Base);
+	//struct linux_params params;
+  struct linux_params *params = AllocateAlignedPages (EFI_SIZE_TO_PAGES(sizeof(struct linux_params)), 16*1024*1024);
+
+  DEBUG ((DEBUG_INFO, "sizeof(struct linux_params) = 0x%x\n", sizeof(struct linux_params)));
+  DEBUG ((DEBUG_INFO, "baseof(struct linux_params) = 0x%x\n", (UINTN) params));
+
+  void *cmdline = AllocateAlignedPages (EFI_SIZE_TO_PAGES(sizeof(struct linux_params)), 1*1024*1024);
+
+	ZeroMem(params, sizeof(struct linux_params));
+
+	params->mount_root_rdonly = hdr->root_flags;
+	params->orig_root_dev = hdr->root_dev;
+	params->init_size = hdr->init_size;
+
+	/* Sensible video defaults. Might be overridden on runtime by coreboot tables. */
+	params->orig_video_mode = 3;
+	params->orig_video_cols = 80;
+	params->orig_video_lines = 25;
+	params->orig_video_isVGA = 1;
+	params->orig_video_points = 16;
+
+	params->loader_type = 0xff; /* Unregistered Linux loader */
+
+	params->relocatable_kernel = hdr->relocatable_kernel;
+	params->kernel_alignment = hdr->kernel_alignment;
+
+  params->cmd_line_ptr = (UINTN) cmdline;
+  params->cmd_line_ptr = 0;
+
+
+  UINTN setup_size = 4 * 512;
+  if (hdr->setup_sects != 0) {
+		setup_size = (hdr->setup_sects + 1) * 512;
+	}
+  DEBUG ((DEBUG_INFO, "setup_size = 0x%x\n", setup_size));
+  VOID* NewKernelBase = AllocateAlignedPages (EFI_SIZE_TO_PAGES(ExtraData->Entry[0].Size), 16*1024*1024);
+  UINTN NewKernelNewBase = 0x1000000;
+  NewKernelBase = (VOID*)NewKernelNewBase;
+  CopyMem (NewKernelBase, (UINT8 *)(UINTN)(ExtraData->Entry[0].Base) +  setup_size, ExtraData->Entry[0].Size);
+
+  params->kernel_start = (UINT32)(UINTN)NewKernelBase;
+
+  VOID* NewInitramfsBase = AllocateAlignedPages (EFI_SIZE_TO_PAGES(ExtraData->Entry[1].Size), 1*1024*1024);
+  //UINTN InitramfsBaseNewBase = 0x4000000;
+  //NewInitramfsBase = (VOID*)InitramfsBaseNewBase;
+  CopyMem (NewInitramfsBase, (UINT8 *)(UINTN)(ExtraData->Entry[1].Base) , ExtraData->Entry[1].Size);
+	
+  params->initrd_start = (UINT32)(UINTN)NewInitramfsBase;
+	params->initrd_size = ExtraData->Entry[1].Size;
+DEBUG ((DEBUG_INFO, "(UINT32)(UINTN)NewInitramfsBase = 0x%x\n", (UINT32)(UINTN)NewInitramfsBase));
+
+BuildMemoryAllocationHob((EFI_PHYSICAL_ADDRESS)(UINTN)NewKernelBase,EFI_PAGES_TO_SIZE( EFI_SIZE_TO_PAGES(ExtraData->Entry[0].Size)), EfiBootServicesData);
+//BuildMemoryAllocationHob((EFI_PHYSICAL_ADDRESS)(UINTN)NewInitramfsBase,EFI_PAGES_TO_SIZE( EFI_SIZE_TO_PAGES(ExtraData->Entry[1].Size)), EfiBootServicesData);
+
+BuildMemoryMap();
+
+
+DEBUG ((DEBUG_INFO, "BuildMemoryMap = 0x%x\n", BuildMemoryMap));
+PrintHob (mHobList);
+
+UNIVERSAL_PAYLOAD_MEMORY_MAP     *MemoryMapHob;
+MemoryMapHob = GetFirstGuidHob(&gUniversalPayloadMemoryMapGuid);
+
+MemoryMapHob = GET_GUID_HOB_DATA(MemoryMapHob);
+UINTN Index;
+for (Index = 0; Index < MemoryMapHob->Count; Index ++){
+  DEBUG ((DEBUG_INFO, "Index= 0x%x\n", Index));
+  DEBUG ((DEBUG_INFO, "MemoryMapHob->MemoryMap[Index].PhysicalStart = 0x%lx\n", MemoryMapHob->MemoryMap[Index].PhysicalStart));
+  DEBUG ((DEBUG_INFO, "MemoryMapHob->MemoryMap[Index].NumberOfPages = 0x%lx\n", MemoryMapHob->MemoryMap[Index].NumberOfPages));
+  params->e820_map[Index].addr = MemoryMapHob->MemoryMap[Index].PhysicalStart;
+  
+  params->e820_map[Index].size = EFI_PAGES_TO_SIZE( MemoryMapHob->MemoryMap[Index].NumberOfPages);
+  params->e820_map[Index].type = MemoryMapHob->MemoryMap[Index].Type;
+
+  DEBUG ((DEBUG_INFO, "params->e820_map[Index].addr= 0x%lx\n", params->e820_map[Index].addr));
+DEBUG ((DEBUG_INFO, "params->e820_map[Index].size= 0x%lx\n", params->e820_map[Index].size));
+DEBUG ((DEBUG_INFO, "params->e820_map[Index].type= 0x%lx\n", params->e820_map[Index].type));
+  if (params->e820_map[Index].type == EfiConventionalMemory)  {
+    DEBUG ((DEBUG_INFO, "EfiConventionalMemory Index= 0x%x\n", Index));
+    params->e820_map[Index].type = E820_RAM;
+  }
+  else{
+    params->e820_map[Index].type = E820_RESERVED;
+  }
+
+}
+params->e820_map_nr = MemoryMapHob->Count;
+DEBUG ((DEBUG_INFO, "params->e820_map_nr = 0x%x\n", params->e820_map_nr));
+DEBUG ((DEBUG_INFO, "params->kernel_start = 0x%x\n", params->kernel_start));
+DEBUG ((DEBUG_INFO, "params->initrd_start = 0x%x\n", params->initrd_start));
+
+DEBUG ((DEBUG_INFO, "LoadLinux = 0x%x\n", LoadLinux));
+
+  LoadLinux((UINT32)(VOID*)params, (UINT32)(params->kernel_start));
+
   return EFI_SUCCESS;
 }
 

@@ -26,6 +26,8 @@
   MemoryAllocation.c
   PrintHob.c
   AcpiTable.c
+  MemoryMapLib.c
+  LoadLinux.nasm
 
 [Sources.Ia32]
   X64/VirtualMemory.h
@@ -55,6 +57,7 @@
   UefiCpuLib
 
 [Guids]
+  gUniversalPayloadMemoryMapGuid
   gEfiMemoryTypeInformationGuid
   gEfiFirmwareFileSystem2Guid
   gEfiGraphicsInfoHobGuid

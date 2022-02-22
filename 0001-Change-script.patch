@@ -1,0 +1,64 @@
+From dc3414f9782229f151fa3c02dbbc514340be512b Mon Sep 17 00:00:00 2001
+From: Dun Tan <dun.tan@intel.com>
+Date: Tue, 15 Feb 2022 13:52:38 +0800
+Subject: [PATCH] Change script
+
+Signed-off-by: Dun Tan <dun.tan@intel.com>
+---
+ BaseTools/Conf/tools_def.template       |  4 ++--
+ UefiPayloadPkg/UniversalPayloadBuild.py | 10 +++++-----
+ 2 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/BaseTools/Conf/tools_def.template b/BaseTools/Conf/tools_def.template
+index f2bb6247e8..78d10021ea 100755
+--- a/BaseTools/Conf/tools_def.template
++++ b/BaseTools/Conf/tools_def.template
+@@ -2857,8 +2857,8 @@ DEFINE CLANGDWARF_IA32_X64_DLINK_COMMON   = -nostdlib -Wl,-q,--gc-sections -z ma
+ DEFINE CLANGDWARF_DLINK2_FLAGS_COMMON     = -Wl,--script=$(EDK_TOOLS_PATH)/Scripts/ClangBase.lds
+ DEFINE CLANGDWARF_IA32_X64_ASLDLINK_FLAGS = DEF(CLANGDWARF_IA32_X64_DLINK_COMMON) -Wl,--defsym=PECOFF_HEADER_SIZE=0 DEF(CLANGDWARF_DLINK2_FLAGS_COMMON) -Wl,--entry,ReferenceAcpiTable -u ReferenceAcpiTable
+ DEFINE CLANGDWARF_IA32_X64_DLINK_FLAGS    = DEF(CLANGDWARF_IA32_X64_DLINK_COMMON) -Wl,--entry,$(IMAGE_ENTRY_POINT) -u $(IMAGE_ENTRY_POINT) -Wl,-Map,$(DEST_DIR_DEBUG)/$(BASE_NAME).map,--whole-archive
+-DEFINE CLANGDWARF_IA32_DLINK2_FLAGS       = -Wl,--defsym=PECOFF_HEADER_SIZE=0x220 DEF(CLANGDWARF_DLINK2_FLAGS_COMMON)
+-DEFINE CLANGDWARF_X64_DLINK2_FLAGS        = -Wl,--defsym=PECOFF_HEADER_SIZE=0x228 DEF(CLANGDWARF_DLINK2_FLAGS_COMMON)
++DEFINE CLANGDWARF_IA32_DLINK2_FLAGS       = -Wl,--defsym=PECOFF_HEADER_SIZE=0x1600000 DEF(CLANGDWARF_DLINK2_FLAGS_COMMON)
++DEFINE CLANGDWARF_X64_DLINK2_FLAGS        = -Wl,--defsym=PECOFF_HEADER_SIZE=0x1600000 DEF(CLANGDWARF_DLINK2_FLAGS_COMMON)
+ 
+ ###########################
+ # CLANGDWARF IA32 definitions
+diff --git a/UefiPayloadPkg/UniversalPayloadBuild.py b/UefiPayloadPkg/UniversalPayloadBuild.py
+index e624ec5874..f543ee0424 100644
+--- a/UefiPayloadPkg/UniversalPayloadBuild.py
++++ b/UefiPayloadPkg/UniversalPayloadBuild.py
+@@ -59,7 +59,7 @@ def BuildUniversalPayload(Args, MacroList):
+     DscPath = os.path.normpath("UefiPayloadPkg/UefiPayloadPkg.dsc")
+     BuildDir = os.path.join(os.environ['WORKSPACE'], os.path.normpath("Build/UefiPayloadPkgX64"))
+     FvOutputDir = os.path.join(BuildDir, f"{BuildTarget}_{ToolChain}", os.path.normpath("FV/DXEFV.Fv"))
+-    EntryOutputDir = os.path.join(BuildDir, f"{BuildTarget}_{ElfToolChain}", os.path.normpath("X64/UefiPayloadPkg/UefiPayloadEntry/UniversalPayloadEntry/DEBUG/UniversalPayloadEntry.dll"))
++    EntryOutputDir = os.path.join(BuildDir, f"{BuildTarget}_{ElfToolChain}", os.path.normpath("IA32/UefiPayloadPkg/UefiPayloadEntry/UniversalPayloadEntry/DEBUG/UniversalPayloadEntry.dll"))
+     PayloadReportPath = os.path.join(BuildDir, "UefiUniversalPayload.txt")
+     ModuleReportPath = os.path.join(BuildDir, "UefiUniversalPayloadEntry.txt")
+     UpldInfoFile = os.path.join(BuildDir, "UniversalPayloadInfo.bin")
+@@ -87,7 +87,7 @@ def BuildUniversalPayload(Args, MacroList):
+     #
+     # Building Universal Payload entry.
+     #
+-    BuildModule = f"build -p {DscPath} -b {BuildTarget} -a X64 -m {EntryModuleInf} -t {ElfToolChain} -y {ModuleReportPath}"
++    BuildModule = f"build -p {DscPath} -b {BuildTarget} -a IA32 -a X64 -m {EntryModuleInf} -t {ElfToolChain} -y {ModuleReportPath}"
+     BuildModule += Defines
+     RunCommand(BuildModule)
+ 
+@@ -103,9 +103,9 @@ def BuildUniversalPayload(Args, MacroList):
+     #
+     # Copy the DXEFV as a section in elf format Universal Payload entry.
+     #
+-    remove_section = '"%s" -I elf64-x86-64 -O elf64-x86-64 --remove-section .upld_info --remove-section .upld.uefi_fv %s'%(LlvmObjcopyPath, EntryOutputDir)
+-    add_section    = '"%s" -I elf64-x86-64 -O elf64-x86-64 --add-section .upld_info=%s --add-section .upld.uefi_fv=%s %s'%(LlvmObjcopyPath, UpldInfoFile, FvOutputDir, EntryOutputDir)
+-    set_section    = '"%s" -I elf64-x86-64 -O elf64-x86-64 --set-section-alignment .upld.upld_info=16 --set-section-alignment .upld.uefi_fv=16 %s'%(LlvmObjcopyPath, EntryOutputDir)
++    remove_section = '"%s" -I elf32-x86-64 -O elf32-x86-64 --remove-section .upld_info --remove-section .upld.uefi_fv %s'%(LlvmObjcopyPath, EntryOutputDir)
++    add_section    = '"%s" -I elf32-x86-64 -O elf32-x86-64 --add-section .upld_info=%s --add-section .upld.uefi_fv=%s %s'%(LlvmObjcopyPath, UpldInfoFile, FvOutputDir, EntryOutputDir)
++    set_section    = '"%s" -I elf32-x86-64 -O elf32-x86-64 --set-section-alignment .upld.upld_info=16 --set-section-alignment .upld.uefi_fv=16 %s'%(LlvmObjcopyPath, EntryOutputDir)
+     RunCommand(remove_section)
+     RunCommand(add_section)
+     RunCommand(set_section)
+-- 
+2.17.1
+

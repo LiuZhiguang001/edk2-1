@@ -65,6 +65,7 @@
   gUniversalPayloadSmbiosTableGuid
   gUniversalPayloadAcpiTableGuid
   gUniversalPayloadSerialPortInfoGuid
+  gUniversalPayloadMemoryMapGuid
 
 [FeaturePcd.IA32]
   gEfiMdeModulePkgTokenSpaceGuid.PcdDxeIplSwitchToLongMode      ## CONSUMES

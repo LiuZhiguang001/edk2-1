@@ -33,7 +33,7 @@ class UPLD_INFO_HEADER(LittleEndianStructure):
         self.HeaderLength   = sizeof(UPLD_INFO_HEADER)
         self.HeaderRevision = 0x0075
         self.Revision       = 0x0000010105
-        self.ImageId        = b'UEFI'
+        self.ImageId        = b'LINUX'
         self.ProducerId     = b'INTEL'
 
 def RunCommand(cmd):
@@ -81,9 +81,9 @@ def BuildUniversalPayload(Args, MacroList):
     #
     # Building DXE core and DXE drivers as DXEFV.
     #
-    BuildPayload = f"build -p {DscPath} -b {BuildTarget} -a X64 -t {ToolChain} -y {PayloadReportPath}"
-    BuildPayload += Defines
-    RunCommand(BuildPayload)
+    #BuildPayload = f"build -p {DscPath} -b {BuildTarget} -a X64 -t {ToolChain} -y {PayloadReportPath}"
+    #BuildPayload += Defines
+    #RunCommand(BuildPayload)
     #
     # Building Universal Payload entry.
     #
@@ -101,13 +101,16 @@ def BuildUniversalPayload(Args, MacroList):
     fp.close()
 
     shutil.copy (EntryOutputDir, os.path.join(BuildDir, 'UniversalPayloadBackUp.elf'))
+    LinuxKernal = r"C:\Users\liuzhigu\code\dun\linuxboot\mainboards\qemu\x86_64\flashkernel"
 
+    LinuxKernal = r"C:\Users\liuzhigu\code\linuxboot\dec1\linuxboot\mainboards\qemu\x86_64\flashkernel"
+    Initramfs = r"C:\Users\liuzhigu\code\dun\linuxboot\mainboards\qemu\x86_64\flashinitramfs.cpio"
     #
     # Copy the DXEFV as a section in elf format Universal Payload entry.
     #
-    remove_section = '"%s" -I elf32-x86-64 -O elf32-x86-64 --remove-section .upld_info --remove-section .upld.uefi_fv %s'%(LlvmObjcopyPath, EntryOutputDir)
-    add_section    = '"%s" -I elf32-x86-64 -O elf32-x86-64 --add-section .upld_info=%s --add-section .upld.uefi_fv=%s %s'%(LlvmObjcopyPath, UpldInfoFile, FvOutputDir, EntryOutputDir)
-    set_section    = '"%s" -I elf32-x86-64 -O elf32-x86-64 --set-section-alignment .upld.upld_info=16 --set-section-alignment .upld.uefi_fv=16 %s'%(LlvmObjcopyPath, EntryOutputDir)
+    remove_section = '"%s" -I elf32-x86-64 -O elf32-x86-64 --remove-section .upld_info --remove-section .upld.linux --remove-section .upld.uefi.fv --remove-section .upld.initramfs %s'%(LlvmObjcopyPath, EntryOutputDir)
+    add_section    = '"%s" -I elf32-x86-64 -O elf32-x86-64 --add-section .upld_info=%s --add-section .upld.linux=%s --add-section .upld.initramfs=%s %s'%(LlvmObjcopyPath, UpldInfoFile, LinuxKernal, Initramfs, EntryOutputDir)
+    set_section    = '"%s" -I elf32-x86-64 -O elf32-x86-64 --set-section-alignment .upld.upld_info=16 --set-section-alignment .upld.linux=16 --set-section-alignment .upld.initramfs=16 %s'%(LlvmObjcopyPath, EntryOutputDir)
     RunCommand(remove_section)
     RunCommand(add_section)
     RunCommand(set_section)
