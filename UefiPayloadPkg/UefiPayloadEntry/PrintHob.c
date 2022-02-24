@@ -483,14 +483,17 @@ PrintMemoryMapGuidHob (
   DEBUG ((DEBUG_INFO, "   Count     = %d\n",   MemoryMapHob->Count));
 
   for(Index = 0; Index < MemoryMapHob->Count; Index++) {
-    DEBUG ((DEBUG_ERROR, "   MemoryMap[%04d] [0x%lx, 0x%lx, as: %a with attribute 0x%lx]\n",
+    DEBUG ((DEBUG_ERROR, "   MemoryMap[%04d] [0x%lx, 0x%lx, with pages 0x%lx, as: %a with attribute 0x%lx]\n",
       Index,
       MemoryMapHob->MemoryMap[Index].PhysicalStart,
       MemoryMapHob->MemoryMap[Index].PhysicalStart + MemoryMapHob->MemoryMap[Index].NumberOfPages * EFI_PAGE_SIZE,
+      MemoryMapHob->MemoryMap[Index].NumberOfPages,
       mMemoryTypeStr[MemoryMapHob->MemoryMap[Index].Type],
       MemoryMapHob->MemoryMap[Index].Attribute
       ));
+    ASSERT(MemoryMapHob->MemoryMap[Index].PhysicalStart < MemoryMapHob->MemoryMap[Index].PhysicalStart + MemoryMapHob->MemoryMap[Index].NumberOfPages * EFI_PAGE_SIZE);
   }
+  
   return EFI_SUCCESS;
 }
 //

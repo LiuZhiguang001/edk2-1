@@ -145,7 +145,7 @@ GetSmallestKMemoryAllocationHob (
   )
 {
   EFI_PEI_HOB_POINTERS        Hob;
-  UINTN                       Index;
+  //UINTN                       Index;
   UINTN                       MemoryAllocationHobCount;
   EFI_HOB_MEMORY_ALLOCATION   *SortBuffer;
   BOOLEAN                     EnumAllHobs;
@@ -159,14 +159,14 @@ GetSmallestKMemoryAllocationHob (
   MemoryAllocationHobCount = 0;
 
   if ((HobListMemoryAllocation->AllocDescriptor.MemoryBaseAddress >= Base) &&
-    (HobListMemoryAllocation->AllocDescriptor.MemoryBaseAddress < Limit)) {
+    (HobListMemoryAllocation->AllocDescriptor.MemoryBaseAddress + HobListMemoryAllocation->AllocDescriptor.MemoryLength <= Limit)) {
     MemoryAllocationHobPtr[MemoryAllocationHobCount++] = HobListMemoryAllocation;
   }
 
   while (GET_HOB_TYPE (Hob) != EFI_HOB_TYPE_END_OF_HOB_LIST && (MemoryAllocationHobCount != K)) {
     if (Hob.Header->HobType == EFI_HOB_TYPE_MEMORY_ALLOCATION) {
       if ((Hob.MemoryAllocation->AllocDescriptor.MemoryBaseAddress >= Base) &&
-        (Hob.MemoryAllocation->AllocDescriptor.MemoryBaseAddress <= Limit)) {
+        (Hob.MemoryAllocation->AllocDescriptor.MemoryBaseAddress + Hob.MemoryAllocation->AllocDescriptor.MemoryLength <= Limit)) {
         MemoryAllocationHobPtr[MemoryAllocationHobCount++] = Hob.MemoryAllocation;
       }
     }
@@ -178,7 +178,7 @@ GetSmallestKMemoryAllocationHob (
   while (GET_HOB_TYPE (Hob) != EFI_HOB_TYPE_END_OF_HOB_LIST) {
     if (Hob.Header->HobType == EFI_HOB_TYPE_MEMORY_ALLOCATION) {
       if ((Hob.MemoryAllocation->AllocDescriptor.MemoryBaseAddress >= Base) &&
-        (Hob.MemoryAllocation->AllocDescriptor.MemoryBaseAddress <= Limit)) {
+        (Hob.MemoryAllocation->AllocDescriptor.MemoryBaseAddress + Hob.MemoryAllocation->AllocDescriptor.MemoryLength <= Limit)) {
           if (MemoryAllocationHobCompare(&MemoryAllocationHobPtr[MemoryAllocationHobCount - 1], &Hob.MemoryAllocation) == 1) {
             MemoryAllocationHobPtr[MemoryAllocationHobCount - 1] = Hob.MemoryAllocation;
             QuickSort (MemoryAllocationHobPtr, K, sizeof (*MemoryAllocationHobPtr), MemoryAllocationHobCompare, &SortBuffer);
@@ -188,10 +188,10 @@ GetSmallestKMemoryAllocationHob (
     Hob.Raw = GET_NEXT_HOB (Hob.Raw);
   }
 
-  for (Index = 0; Index < MemoryAllocationHobCount; Index++) {
-    DEBUG ((DEBUG_INFO, "GetSmallestKMemoryAllocationHob[%d]: [0x%lx, 0x%lx)\n", Index, MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryBaseAddress,
-    MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryBaseAddress + MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryLength));
-  }
+  //for (Index = 0; Index < MemoryAllocationHobCount; Index++) {
+  //  //DEBUG ((DEBUG_INFO, "GetSmallestKMemoryAllocationHob[%d]: [0x%lx, 0x%lx)\n", Index, MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryBaseAddress,
+  //  MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryBaseAddress + MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryLength));
+  //}
   return MemoryAllocationHobCount;
 }
 
@@ -248,7 +248,7 @@ AppendEfiMemoryDescriptor (
   CURRENT_INFO                  *CurrentInfo,
   EFI_MEMORY_DESCRIPTOR         *MemoryMap,
   EFI_PHYSICAL_ADDRESS          MemoryBaseAddress,
-  UINTN                         PageNumber,
+  UINT64                        PageNumber,
   UINT64                        Attribute,
   EFI_MEMORY_TYPE               Type
   )
@@ -420,9 +420,9 @@ BuildMemoryMap (
       CurrentResourceHob = GetSmallestResourceHob (CurrentInfo.CurrentEnd);
     }
     if (Round == 0) {
-      DEBUG ((DEBUG_INFO, "   sizeof (UNIVERSAL_PAYLOAD_MEMORY_MAP  = %d\n",   sizeof (UNIVERSAL_PAYLOAD_MEMORY_MAP)));
-      DEBUG ((DEBUG_INFO, "   sizeof (EFI_MEMORY_DESCRIPTOR)  = %d\n",   sizeof (EFI_MEMORY_DESCRIPTOR)));
-      DEBUG ((DEBUG_INFO, "   CurrentInfo.CurrentIndex  = %d\n",   CurrentInfo.Count));
+      //DEBUG ((DEBUG_INFO, "   sizeof (UNIVERSAL_PAYLOAD_MEMORY_MAP  = %d\n",   sizeof (UNIVERSAL_PAYLOAD_MEMORY_MAP)));
+      //DEBUG ((DEBUG_INFO, "   sizeof (EFI_MEMORY_DESCRIPTOR)  = %d\n",   sizeof (EFI_MEMORY_DESCRIPTOR)));
+      //DEBUG ((DEBUG_INFO, "   CurrentInfo.CurrentIndex  = %d\n",   CurrentInfo.Count));
       MemoryMapHob = BuildGuidHob (&gUniversalPayloadMemoryMapGuid, sizeof (UNIVERSAL_PAYLOAD_MEMORY_MAP) + sizeof (EFI_MEMORY_DESCRIPTOR) * CurrentInfo.Count);
       MemoryMapHob->Header.Revision = UNIVERSAL_PAYLOAD_MEMORY_MAP_REVISION;
       MemoryMapHob->Header.Length = sizeof (UNIVERSAL_PAYLOAD_MEMORY_MAP) + sizeof (EFI_MEMORY_DESCRIPTOR) * CurrentInfo.Count;
@@ -438,5 +438,6 @@ BuildMemoryMap (
   }
 
   MemoryMapHob->Count = CurrentInfo.Count;
+  MemoryMapHob->DescriptorSize = sizeof(EFI_MEMORY_DESCRIPTOR);
   return EFI_SUCCESS;
 }
