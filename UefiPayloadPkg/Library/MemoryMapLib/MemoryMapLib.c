@@ -410,7 +410,7 @@ BuildMemoryMap (
             DefaultMemoryAttribute,
             MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryType
             );
-          if (Round = 1) {
+          if (Round == 1) {
             MemoryAllocationHobPtr[Index]->Header.HobType = EFI_HOB_TYPE_UNUSED;
           }
         }
@@ -430,7 +430,7 @@ BuildMemoryMap (
           );
       }
 
-      if (Round = 1) {
+      if (Round == 1) {
         CurrentResourceHob->Header.HobType = EFI_HOB_TYPE_UNUSED;
       }
 
