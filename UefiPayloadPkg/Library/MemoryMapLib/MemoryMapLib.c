@@ -5,7 +5,6 @@
 
 #include <Library/MemoryMapLib.h>
 #include <Library/HobLib.h>
-#include <Library/SortLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/DebugLib.h>
 #include <Library/BaseMemoryLib.h>
@@ -440,7 +439,7 @@ BuildMemoryMap (
     if (Round == 0) {
       MemoryMapHob = BuildGuidHob (&gUniversalPayloadMemoryMapGuid, sizeof (UNIVERSAL_PAYLOAD_MEMORY_MAP) + sizeof (EFI_MEMORY_DESCRIPTOR) * CurrentInfo.Count);
       MemoryMapHob->Header.Revision = UNIVERSAL_PAYLOAD_MEMORY_MAP_REVISION;
-      MemoryMapHob->Header.Length   = (UINT16) (sizeof (UNIVERSAL_PAYLOAD_MEMORY_MAP) + sizeof (EFI_MEMORY_DESCRIPTOR) * CurrentInfo.Count);
+      MemoryMapHob->Header.Length   = (UINT16)(sizeof (UNIVERSAL_PAYLOAD_MEMORY_MAP) + sizeof (EFI_MEMORY_DESCRIPTOR) * CurrentInfo.Count);
       MemoryMap = MemoryMapHob->MemoryMap;
 
       //
@@ -452,7 +451,7 @@ BuildMemoryMap (
     }
   }
 
-  MemoryMapHob->Count = CurrentInfo.Count;
+  MemoryMapHob->Count = (UINT16)CurrentInfo.Count;
   MemoryMapHob->DescriptorSize = sizeof (EFI_MEMORY_DESCRIPTOR);
   return EFI_SUCCESS;
 }

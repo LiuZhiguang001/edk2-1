@@ -32,7 +32,6 @@
   BaseMemoryLib
   DebugLib
   HobLib
-  SortLib
   MemoryAllocationLib
 
 [Guids]
