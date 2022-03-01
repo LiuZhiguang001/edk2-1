@@ -49,16 +49,16 @@ SetCbor (
   UINTN   size;
   size  = 300;
   UINT8   *buf = AllocatePool(size);
-  CborError err;
+  //CborError err;
   UINT32 buffer1[] = { 0x12345678, 0x0, 0x90ABCDEF};
   CborEncoder encoder, mapEncoder, SubmapEncoder;
   cbor_encoder_init(&encoder, buf, size, 0);
 
-  err = cbor_encode_text_stringz(&encoder, "Before Map");
-  err = cbor_encode_text_stringz(&encoder, "Another string");
-  cbor_encode_uint(&encoder, 0x31415926);
+  //err = cbor_encode_text_stringz(&encoder, "Before Map");
+  //err = cbor_encode_text_stringz(&encoder, "Another string");
+  //cbor_encode_uint(&encoder, 0x31415926);
 
-  cbor_encoder_create_map(&encoder, &mapEncoder, 3);
+  cbor_encoder_create_map(&encoder, &mapEncoder, 5);
 
 
 
@@ -83,15 +83,16 @@ SetCbor (
   cbor_encode_uint(&SubmapEncoder, PcdGetBool (PcdSerialUseMmio));
   cbor_encoder_close_container(&mapEncoder, &SubmapEncoder);
 
-  cbor_encoder_close_container(&encoder, &mapEncoder);
+  
 
   CborEncoder arrayEncoder;
-  cbor_encoder_create_array	(&encoder, &arrayEncoder, 3);
+  cbor_encode_text_stringz(&mapEncoder, "my array");
+  cbor_encoder_create_array	(&mapEncoder, &arrayEncoder, 3);
   cbor_encode_text_stringz(&arrayEncoder, "After Map");
   cbor_encode_text_stringz(&arrayEncoder, "Another string");
   cbor_encode_uint(&arrayEncoder, 0x123456);
-  cbor_encoder_close_container(&encoder, &arrayEncoder);
-  
+  cbor_encoder_close_container(&mapEncoder, &arrayEncoder);
+  cbor_encoder_close_container(&encoder, &mapEncoder);
   UINTN used_size;
   used_size = cbor_encoder_get_buffer_size (&encoder, (const uint8_t *)buf);
   DEBUG ((EFI_D_ERROR, "used_size: 0x%x \n", used_size ));
