@@ -15,7 +15,7 @@
 
   @retval EFI_SUCCESS           The Memory Map is created successfully.
 **/
-EFI_STATUS
+RETURN_STATUS
 EFIAPI
 BuildMemoryMap (
   VOID

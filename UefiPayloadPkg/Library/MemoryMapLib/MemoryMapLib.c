@@ -152,12 +152,12 @@ GetSmallestKMemoryAllocationHob (
   //
   // Enum all hobs, including the fake memory allocation hob which contains the hob list.
   //
-  Hob.Raw = (UINT8 *)(UINTN)HobListMemoryAllocation->AllocDescriptor.MemoryBaseAddress;
+  Hob.Raw = GetHobList ();
 
   MemoryAllocationHobCount = 0;
 
   if ((HobListMemoryAllocation->AllocDescriptor.MemoryBaseAddress >= Base) &&
-      (HobListMemoryAllocation->AllocDescriptor.MemoryBaseAddress + HobListMemoryAllocation->AllocDescriptor.MemoryLength <= Limit))
+      (HobListMemoryAllocation->AllocDescriptor.MemoryBaseAddress < Limit))
   {
     MemoryAllocationHobPtr[MemoryAllocationHobCount++] = HobListMemoryAllocation;
   }
@@ -165,7 +165,7 @@ GetSmallestKMemoryAllocationHob (
   while (GET_HOB_TYPE (Hob) != EFI_HOB_TYPE_END_OF_HOB_LIST && (MemoryAllocationHobCount != K)) {
     if (Hob.Header->HobType == EFI_HOB_TYPE_MEMORY_ALLOCATION) {
       if ((Hob.MemoryAllocation->AllocDescriptor.MemoryBaseAddress >= Base) &&
-          (Hob.MemoryAllocation->AllocDescriptor.MemoryBaseAddress + Hob.MemoryAllocation->AllocDescriptor.MemoryLength <= Limit))
+          (Hob.MemoryAllocation->AllocDescriptor.MemoryBaseAddress  < Limit))
       {
         MemoryAllocationHobPtr[MemoryAllocationHobCount++] = Hob.MemoryAllocation;
       }
@@ -179,7 +179,7 @@ GetSmallestKMemoryAllocationHob (
   while (GET_HOB_TYPE (Hob) != EFI_HOB_TYPE_END_OF_HOB_LIST) {
     if (Hob.Header->HobType == EFI_HOB_TYPE_MEMORY_ALLOCATION) {
       if ((Hob.MemoryAllocation->AllocDescriptor.MemoryBaseAddress >= Base) &&
-          (Hob.MemoryAllocation->AllocDescriptor.MemoryBaseAddress + Hob.MemoryAllocation->AllocDescriptor.MemoryLength <= Limit))
+          (Hob.MemoryAllocation->AllocDescriptor.MemoryBaseAddress < Limit))
       {
         if (MemoryAllocationHobCompare (&MemoryAllocationHobPtr[MemoryAllocationHobCount - 1], &Hob.MemoryAllocation) == 1) {
           MemoryAllocationHobPtr[MemoryAllocationHobCount - 1] = Hob.MemoryAllocation;
@@ -289,9 +289,10 @@ AppendEfiMemoryDescriptor (
   Create a Guid Hob containing the memory map descriptor table.
   After calling the function, PEI should not do any memory allocation operation.
 
-  @retval EFI_SUCCESS           The Memory Map is created successfully.
+  @retval RETURN_SUCCESS           The Memory Map is created successfully.
+  @retval RETURN_UNSUPPORTED       The Memory Map cannot be created successfully.
 **/
-EFI_STATUS
+RETURN_STATUS
 EFIAPI
 BuildMemoryMap (
   VOID
@@ -299,8 +300,8 @@ BuildMemoryMap (
 {
   EFI_PEI_HOB_POINTERS          Hob;
   UINTN                         MemoryAllocationHobCount;
-  EFI_PHYSICAL_ADDRESS          ResourceHobStart;
   EFI_PHYSICAL_ADDRESS          ResourceHobEnd;
+  EFI_PHYSICAL_ADDRESS          MemoryAllocationHobEnd;
   EFI_PHYSICAL_ADDRESS          OverlappedLength;
   EFI_HOB_RESOURCE_DESCRIPTOR   *CurrentResourceHob;
   CURRENT_INFO                  CurrentInfo;
@@ -319,10 +320,28 @@ BuildMemoryMap (
   //
   HobListMemoryAllocation.Header.HobType = EFI_HOB_TYPE_MEMORY_ALLOCATION;
   HobListMemoryAllocation.AllocDescriptor.MemoryType = EfiBootServicesData;
-  HobListMemoryAllocation.AllocDescriptor.MemoryBaseAddress = (PHYSICAL_ADDRESS)(UINTN)Hob.Raw;
-  HobListMemoryAllocation.AllocDescriptor.MemoryLength = (UINTN)Hob.HandoffInformationTable->EfiFreeMemoryBottom
-                                                         - HobListMemoryAllocation.AllocDescriptor.MemoryBaseAddress;
-  ASSERT ((UINTN)Hob.HandoffInformationTable->EfiFreeMemoryBottom == (UINTN)GET_NEXT_HOB (Hob.HandoffInformationTable->EfiEndOfHobList));
+  if (((UINTN)Hob.Raw & (EFI_PAGE_SIZE - 1)) == 0) {
+    HobListMemoryAllocation.AllocDescriptor.MemoryBaseAddress = (PHYSICAL_ADDRESS)(UINTN)Hob.Raw;
+  } else {
+    HobListMemoryAllocation.AllocDescriptor.MemoryBaseAddress = (PHYSICAL_ADDRESS)((UINTN)Hob.Raw & (~(EFI_PAGE_SIZE - 1)));
+  }
+
+  if ((PHYSICAL_ADDRESS)(UINTN)Hob.HandoffInformationTable->EfiFreeMemoryBottom < (UINTN)HobListMemoryAllocation.AllocDescriptor.MemoryBaseAddress) {
+    ASSERT (FALSE);
+    return RETURN_UNSUPPORTED;
+  }
+
+  HobListMemoryAllocation.AllocDescriptor.MemoryLength = EFI_PAGES_TO_SIZE (
+                                                           EFI_SIZE_TO_PAGES (
+                                                             (PHYSICAL_ADDRESS)(UINTN)Hob.HandoffInformationTable->EfiFreeMemoryBottom
+                                                             - HobListMemoryAllocation.AllocDescriptor.MemoryBaseAddress
+                                                             )
+                                                           );
+
+  if (Hob.HandoffInformationTable->EfiFreeMemoryBottom != (PHYSICAL_ADDRESS)(UINTN)GET_NEXT_HOB (Hob.HandoffInformationTable->EfiEndOfHobList)) {
+    ASSERT (FALSE);
+    return RETURN_UNSUPPORTED;
+  }
 
   MemoryMap = NULL;
   //
@@ -336,13 +355,27 @@ BuildMemoryMap (
     CurrentInfo.NewElement = TRUE;
     CurrentResourceHob     = GetSmallestResourceHob (CurrentInfo.CurrentEnd);
     while (CurrentResourceHob != NULL) {
+      if ((CurrentResourceHob->PhysicalStart & (EFI_PAGE_SIZE - 1)) != 0) {
+        ASSERT (FALSE);
+        return RETURN_UNSUPPORTED;
+      }
+
+      if ((CurrentResourceHob->ResourceLength & (EFI_PAGE_SIZE - 1)) != 0) {
+        ASSERT (FALSE);
+        return RETURN_UNSUPPORTED;
+      }
+
+      ResourceHobEnd = CurrentResourceHob->PhysicalStart + CurrentResourceHob->ResourceLength;
+      if (ResourceHobEnd <  CurrentResourceHob->PhysicalStart) {
+        ASSERT (FALSE);
+        return RETURN_UNSUPPORTED;
+      }
+
       if (CurrentInfo.CurrentEnd != CurrentResourceHob->PhysicalStart) {
         CurrentInfo.CurrentEnd = CurrentResourceHob->PhysicalStart;
         CurrentInfo.NewElement = TRUE;
       }
 
-      ResourceHobStart = CurrentResourceHob->PhysicalStart;
-      ResourceHobEnd   = CurrentResourceHob->PhysicalStart + CurrentResourceHob->ResourceLength;
       DefaultMemoryAttribute = ConvertResourceDescriptorHobAttributesToCapabilities (CurrentResourceHob->ResourceAttribute);
       DefaultMemoryType = ConvertResourceDescriptorHobResourceTypeToEfiMemoryType (CurrentResourceHob->ResourceType);
       //
@@ -359,12 +392,33 @@ BuildMemoryMap (
                                      &HobListMemoryAllocation
                                      );
         for (Index = 0; Index < MemoryAllocationHobCount; Index++) {
+          if ((MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryBaseAddress & (EFI_PAGE_SIZE - 1)) != 0) {
+            ASSERT (FALSE);
+            return RETURN_UNSUPPORTED;
+          }
+
+          if ((MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryLength & (EFI_PAGE_SIZE - 1)) != 0) {
+            ASSERT (FALSE);
+            return RETURN_UNSUPPORTED;
+          }
+
+          MemoryAllocationHobEnd = MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryBaseAddress + MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryLength;
+          if (MemoryAllocationHobEnd <  MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryBaseAddress) {
+            ASSERT (FALSE);
+            return RETURN_UNSUPPORTED;
+          }
+
+          if (MemoryAllocationHobEnd >  ResourceHobEnd) {
+            ASSERT (FALSE);
+            return RETURN_UNSUPPORTED;
+          }
+
           //
           // There is overlap case in ovmf.
           //
           // ASSERT (CurrentInfo.CurrentEnd <= MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryBaseAddress);
           if (CurrentInfo.CurrentEnd > MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryBaseAddress) {
-            if (CurrentInfo.CurrentEnd >= MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryBaseAddress + MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryLength) {
+            if (CurrentInfo.CurrentEnd >= MemoryAllocationHobEnd) {
               //
               // Previous Memory Allocation Hob overlaps the entire current Memory Allocation Hob.
               // Ignore current Memory Allocation Hob.
@@ -401,19 +455,27 @@ BuildMemoryMap (
           //
           // Create memory map entry for the Memory Allocation HOB
           //
-          AppendEfiMemoryDescriptor (
-            &CurrentInfo,
-            MemoryMap,
-            MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryBaseAddress,
-            EFI_SIZE_TO_PAGES (MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryLength),
-            DefaultMemoryAttribute,
-            MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryType
-            );
+          if (MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryLength != 0) {
+            AppendEfiMemoryDescriptor (
+              &CurrentInfo,
+              MemoryMap,
+              MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryBaseAddress,
+              EFI_SIZE_TO_PAGES (MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryLength),
+              DefaultMemoryAttribute,
+              MemoryAllocationHobPtr[Index]->AllocDescriptor.MemoryType
+              );
+          }
+
           if (Round == 1) {
             MemoryAllocationHobPtr[Index]->Header.HobType = EFI_HOB_TYPE_UNUSED;
           }
         }
       } while (MemoryAllocationHobCount != 0);
+
+      if (CurrentInfo.CurrentEnd > ResourceHobEnd) {
+        ASSERT (FALSE);
+        return RETURN_UNSUPPORTED;
+      }
 
       //
       // Create Conventional or Reserved memory map entry for the memory after the last Memory Allocation HOB
@@ -445,8 +507,12 @@ BuildMemoryMap (
       //
       // Update the HOB list length
       //
-      HobListMemoryAllocation.AllocDescriptor.MemoryLength = (UINTN)Hob.HandoffInformationTable->EfiFreeMemoryBottom
-                                                             - HobListMemoryAllocation.AllocDescriptor.MemoryBaseAddress;
+      HobListMemoryAllocation.AllocDescriptor.MemoryLength = EFI_PAGES_TO_SIZE (
+                                                               EFI_SIZE_TO_PAGES (
+                                                                 (PHYSICAL_ADDRESS)(UINTN)Hob.HandoffInformationTable->EfiFreeMemoryBottom
+                                                                 - HobListMemoryAllocation.AllocDescriptor.MemoryBaseAddress
+                                                                 )
+                                                               );
       ASSERT ((UINTN)Hob.HandoffInformationTable->EfiFreeMemoryBottom == (UINTN)GET_NEXT_HOB (Hob.HandoffInformationTable->EfiEndOfHobList));
     }
   }

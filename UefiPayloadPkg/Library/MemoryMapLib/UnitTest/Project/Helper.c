@@ -194,7 +194,7 @@ InternalAllocatePages (
 
   *(FreeMemoryTop) -= Pages * EFI_PAGE_SIZE;
   *Memory = *(FreeMemoryTop);
-  printf ("Warning: Allocate page");
+  //printf ("Warning: Allocate page");
   BuildMemoryAllocationHob (
     *(FreeMemoryTop),
     Pages * EFI_PAGE_SIZE,

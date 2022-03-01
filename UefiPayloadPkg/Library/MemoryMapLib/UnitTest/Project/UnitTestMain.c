@@ -109,7 +109,7 @@ main (
     CreateTwoHandoffTableHob (&HobList1, &HobList2, &HobList1Backup, AlignedRange);
 
     mHobList = HobList1;
-    CreateRemainingHobs (HobList1, HobList2, Get64BitRandomNumber (), Get64BitRandomNumber ());
+    CreateRemainingHobs (HobList1, HobList2, 0, Get64BitRandomNumber ()); // Create end which is above hoblist2.limit
     CopyMem (HobList1Backup, HobList1, SIZE_64MB);
     BuildMemoryMap ();
     PrintHob (HobList1);
@@ -134,8 +134,8 @@ main (
       HobBackup.Raw = GET_NEXT_HOB (HobBackup);
     }
 
-    PrintHob (HobList1);
-    PrintHob (HobList2);
+    //PrintHob (HobList1);
+    //PrintHob (HobList2);
     VerifyHob (HobList1, HobList2);
 
     if (Range != NULL) {

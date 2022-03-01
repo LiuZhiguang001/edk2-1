@@ -226,7 +226,10 @@ VerifyHob (
         // case that in hoblist1, it is in non-reserved resource hob but reserved memory hob
       } else if ((Info1.Attribute == Info2.Attribute) && (Info1.ResType == Info2.ResType) && (Info1.IsPhysicalMem == Info2.IsPhysicalMem) && (Info2.MemType == EfiReservedMemoryType) && (Info2.ResType == EFI_RESOURCE_MEMORY_RESERVED)) {
         // case that in hoblist1, it is in reserved resource hob but no in reserved memory hob
-      } else {
+      } else if ((Info1.Attribute == Info2.Attribute) && (Info1.ResType == Info2.ResType) && (Info1.IsPhysicalMem == Info2.IsPhysicalMem) && (Info1.MemType == EfiConventionalMemory) && (Info2.MemType == MAX_UINT32) && (Info2.ResType == EFI_RESOURCE_SYSTEM_MEMORY)) {
+        // case that in hoblist1, it is in conventional memory hob but not in any memory hob in hoblist2
+      }
+      else {
         printf ("The point which has issue is %llx\n", AllArray[j]);
         printf ("Index in hob 1\n");
 

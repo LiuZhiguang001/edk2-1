@@ -291,10 +291,6 @@ CreateRandomMemoryHob (
     }
   }
 
-  if (type == EfiConventionalMemory) {
-    return;
-  }
-
   BuildMemoryAllocationHob (Base, (Limit - Base), type);
 }
 
