@@ -84,6 +84,18 @@ GetTestCaseCount (
   VOID
   );
 
+VOID
+VerifyHobList1WithMemoryMap (
+  IN CONST VOID *HobList1Start,
+  IN UNIVERSAL_PAYLOAD_MEMORY_MAP *MemoryMapHob
+  );
+
+VOID
+VerifyHobList2WithMemoryMap (
+  IN CONST VOID *HobList2Start,
+  IN UNIVERSAL_PAYLOAD_MEMORY_MAP *MemoryMapHob
+  );
+
 VOID  *mHobList;
 
 int
@@ -110,7 +122,7 @@ main (
   TestCaseCount = GetTestCaseCount ();
   IgnoreOtherAssert = FALSE;
   printf ("TestCaseCount %d \n", TestCaseCount);
-  for (Index = 0; Index < 0 + TestCaseCount; Index++) {
+  for (Index = 0; Index < 10 + TestCaseCount; Index++) {
     printf ("Run for %d times\n", Index + 1);
     Range = malloc (SIZE_128MB + SIZE_128MB);
     if (Range == NULL) {
@@ -164,6 +176,8 @@ main (
       // PrintHob (HobList1);
       // PrintHob (HobList2);
       VerifyHob (HobList1, HobList2);
+      VerifyHobList1WithMemoryMap(HobList1, (UNIVERSAL_PAYLOAD_MEMORY_MAP *)GET_GUID_HOB_DATA (MemoryMapHob));
+      VerifyHobList2WithMemoryMap(HobList2, (UNIVERSAL_PAYLOAD_MEMORY_MAP *)GET_GUID_HOB_DATA (MemoryMapHob));
     }
 
     if (Range != NULL) {
