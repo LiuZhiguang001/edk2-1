@@ -102,8 +102,21 @@ EFIAPI
 CreateTwoHandoffTableHob (
   VOID **HobList1,
   VOID **HobList2,
-  VOID** HobListCopy,
+  VOID **HobListCopy,
   VOID *Range
   );
+
+typedef
+VOID
+(EFIAPI *TEST_CASE_TO_CREATE_HOBS)(
+  VOID   *HobList1,
+  VOID   *HobList2
+  );
+
+typedef struct {
+  RETURN_STATUS               ExpectedStatus;
+  TEST_CASE_TO_CREATE_HOBS    TestCaseFunction;
+  UINTN                       LineNumber;
+} TEST_CASE;
 
 #endif // _DECLARATIONS_

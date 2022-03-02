@@ -17,7 +17,7 @@ myassert (
 
 #define CopyMem  memcpy
 #undef ASSERT
-#define ASSERT(x)  do{ myassert(x); assert(x);}while(0)
+#define ASSERT(x)  do{ myassert(__FILE__, __LINE__, x); }while(0)
 
 #define FixedPcdGet32(TokenName)  _PCD_VALUE_##TokenName
 #define _PCD_VALUE_PcdSystemMemoryUefiRegionSize  0x04000000U

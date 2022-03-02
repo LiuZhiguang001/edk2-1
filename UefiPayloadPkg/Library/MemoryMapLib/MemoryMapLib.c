@@ -499,6 +499,11 @@ BuildMemoryMap (
     }
 
     if (Round == 0) {
+      if (CurrentInfo.Count == 0) {
+        ASSERT (FALSE);
+        return RETURN_UNSUPPORTED;
+      }
+
       MemoryMapHob = BuildGuidHob (&gUniversalPayloadMemoryMapGuid, sizeof (UNIVERSAL_PAYLOAD_MEMORY_MAP) + sizeof (EFI_MEMORY_DESCRIPTOR) * CurrentInfo.Count);
       MemoryMapHob->Header.Revision = UNIVERSAL_PAYLOAD_MEMORY_MAP_REVISION;
       MemoryMapHob->Header.Length   = (UINT16)(sizeof (UNIVERSAL_PAYLOAD_MEMORY_MAP) + sizeof (EFI_MEMORY_DESCRIPTOR) * CurrentInfo.Count);
@@ -519,5 +524,5 @@ BuildMemoryMap (
 
   MemoryMapHob->Count = (UINT16)CurrentInfo.Count;
   MemoryMapHob->DescriptorSize = sizeof (EFI_MEMORY_DESCRIPTOR);
-  return EFI_SUCCESS;
+  return RETURN_SUCCESS;
 }

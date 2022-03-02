@@ -75,6 +75,15 @@ extern EFI_GUID  gEfiHobMemoryAllocBspStoreGuid = {
   0x564B33CD, 0xC92A, 0x4593, { 0x90, 0xBF, 0x24, 0x73, 0xE4, 0x3C, 0x63, 0x22 }
 };
 
+extern TEST_CASE  gTestCase[];
+
+UINTN  ErrorLineNumber;
+extern BOOLEAN IgnoreOtherAssert;
+UINTN
+GetTestCaseCount (
+  VOID
+  );
+
 VOID  *mHobList;
 
 int
@@ -91,14 +100,18 @@ main (
   UINTN                 AlignmentMask;
   UINTN                 Alignment;
   UINTN                 Index;
+  UINTN                 TestCaseCount;
   EFI_PEI_HOB_POINTERS  Hob1;
   EFI_PEI_HOB_POINTERS  HobBackup;
+  RETURN_STATUS         Status;
 
   Alignment     = SIZE_4KB;
   AlignmentMask = Alignment - 1;
-
-  for (Index = 0; Index < 1; Index++) {
-    printf ("Run for %d times\n", Index);
+  TestCaseCount = GetTestCaseCount ();
+  IgnoreOtherAssert = FALSE;
+  printf ("TestCaseCount %d \n", TestCaseCount);
+  for (Index = 0; Index < 0 + TestCaseCount; Index++) {
+    printf ("Run for %d times\n", Index + 1);
     Range = malloc (SIZE_128MB + SIZE_128MB);
     if (Range == NULL) {
       printf ("Memory is not allocated\n");
@@ -109,34 +122,49 @@ main (
     CreateTwoHandoffTableHob (&HobList1, &HobList2, &HobList1Backup, AlignedRange);
 
     mHobList = HobList1;
-    CreateRemainingHobs (HobList1, HobList2, 0, Get64BitRandomNumber ()); // Create end which is above hoblist2.limit
-    CopyMem (HobList1Backup, HobList1, SIZE_64MB);
-    BuildMemoryMap ();
-    PrintHob (HobList1);
-    MemoryMapHob = GetNextGuidHob (&gUniversalPayloadMemoryMapGuid, mHobList);
-    mHobList     = HobList2;
-
-    CreateHobsBasedOnMemoryMap ((UNIVERSAL_PAYLOAD_MEMORY_MAP *)GET_GUID_HOB_DATA (MemoryMapHob));
-
-    Hob1.Raw = (UINT8 *)HobList1;
-    HobBackup.Raw = (UINT8 *)HobList1Backup;
-
-    while (TRUE) {
-      if (HobBackup.Header->HobType == EFI_HOB_TYPE_RESOURCE_DESCRIPTOR) {
-        Hob1.Header->HobType = EFI_HOB_TYPE_RESOURCE_DESCRIPTOR;
-      } else if (HobBackup.Header->HobType == EFI_HOB_TYPE_MEMORY_ALLOCATION) {
-        Hob1.Header->HobType = EFI_HOB_TYPE_MEMORY_ALLOCATION;
-      } else if (HobBackup.Header->HobType == EFI_HOB_TYPE_END_OF_HOB_LIST) {
-        break;
-      }
-
-      Hob1.Raw = GET_NEXT_HOB (Hob1);
-      HobBackup.Raw = GET_NEXT_HOB (HobBackup);
+    if (Index < TestCaseCount) {
+      ErrorLineNumber = gTestCase[Index].LineNumber;
+      gTestCase[Index].TestCaseFunction (HobList1, HobList2);
+    } else {
+      CreateRemainingHobs (HobList1, HobList2, 0, Get64BitRandomNumber ()); // Create end which is above hoblist2.limit
     }
 
-    //PrintHob (HobList1);
-    //PrintHob (HobList2);
-    VerifyHob (HobList1, HobList2);
+    CopyMem (HobList1Backup, HobList1, SIZE_64MB);
+    Status = BuildMemoryMap ();
+    if (Index < TestCaseCount) {
+      IgnoreOtherAssert = FALSE;
+      
+      assert (Status == gTestCase[Index].ExpectedStatus);
+      if (Status != RETURN_SUCCESS) {
+        assert(ErrorLineNumber == 0);
+      }
+    } else {
+      PrintHob (HobList1);
+      MemoryMapHob = GetNextGuidHob (&gUniversalPayloadMemoryMapGuid, mHobList);
+      mHobList     = HobList2;
+
+      CreateHobsBasedOnMemoryMap ((UNIVERSAL_PAYLOAD_MEMORY_MAP *)GET_GUID_HOB_DATA (MemoryMapHob));
+
+      Hob1.Raw = (UINT8 *)HobList1;
+      HobBackup.Raw = (UINT8 *)HobList1Backup;
+
+      while (TRUE) {
+        if (HobBackup.Header->HobType == EFI_HOB_TYPE_RESOURCE_DESCRIPTOR) {
+          Hob1.Header->HobType = EFI_HOB_TYPE_RESOURCE_DESCRIPTOR;
+        } else if (HobBackup.Header->HobType == EFI_HOB_TYPE_MEMORY_ALLOCATION) {
+          Hob1.Header->HobType = EFI_HOB_TYPE_MEMORY_ALLOCATION;
+        } else if (HobBackup.Header->HobType == EFI_HOB_TYPE_END_OF_HOB_LIST) {
+          break;
+        }
+
+        Hob1.Raw = GET_NEXT_HOB (Hob1);
+        HobBackup.Raw = GET_NEXT_HOB (HobBackup);
+      }
+
+      // PrintHob (HobList1);
+      // PrintHob (HobList2);
+      VerifyHob (HobList1, HobList2);
+    }
 
     if (Range != NULL) {
       free (Range);

@@ -41,6 +41,10 @@ extern VOID  *mHobList;
 #define MAX_DEBUG_MESSAGE_LENGTH  0x100
 char  TempFormat[MAX_DEBUG_MESSAGE_LENGTH];
 
+extern UINTN ErrorLineNumber;
+
+BOOLEAN IgnoreOtherAssert;
+
 typedef struct {
   UINT32    Signature;
   VOID      *AllocatedBufffer;
@@ -141,7 +145,6 @@ CopyGuid (
   )
 {
   *DestinationGuid = *SourceGuid;
-  *(DestinationGuid + 1) = *(SourceGuid + 1);
 
   return DestinationGuid;
 }
@@ -292,11 +295,24 @@ CompareGuid (
 
 void
 myassert (
+  IN CONST CHAR8* FileName,
+  IN UINTN        LineNumber,
   BOOLEAN x
   )
 {
+  if (IgnoreOtherAssert) {
+    return;
+  }
   if (x) {
   } else {
+    printf("%s %d\n", FileName, LineNumber);
+    if (LineNumber == ErrorLineNumber) {
+      ErrorLineNumber = 0;
+      IgnoreOtherAssert = TRUE;
+      return;
+    }
     printf ("will assert\n");
+   
   }
+  assert(x);
 }
