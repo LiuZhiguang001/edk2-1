@@ -38,7 +38,7 @@
 extern TEST_CASE  gTestCase[];
 
 extern TEST_CASE  gTestCaseForMemMap[];
-
+CHAR8* ErrorFileName;
 UINTN           ErrorLineNumber;
 extern BOOLEAN  IgnoreOtherAssert;
 UINTN
@@ -174,6 +174,7 @@ main (
     Range    = AllocateRangeForHobLists (&HobList1, &HobList2, &HobList1Backup);
     mHobList = HobList1;
     ErrorLineNumber = gTestCase[Index].LineNumber;
+    ErrorFileName = gTestCase[Index].FileName;
     gTestCase[Index].TestCaseFunction (HobList1, HobList2);
     CopyMem (HobList1Backup, HobList1, SIZE_64MB);
 
@@ -182,6 +183,7 @@ main (
     assert (Status == gTestCase[Index].ExpectedStatus);
     if (Status != RETURN_SUCCESS) {
       assert (ErrorLineNumber == 0);
+      assert(ErrorFileName == NULL);
     }
 
 
@@ -198,6 +200,7 @@ main (
     // Directly create memory map table
     //
     ErrorLineNumber = gTestCaseForMemMap[Index].LineNumber;
+    ErrorFileName = gTestCaseForMemMap[Index].FileName;
     gTestCaseForMemMap[Index].TestCaseFunction (HobList1, HobList2);
     MemoryMapHob = GetNextGuidHob (&gUniversalPayloadMemoryMapGuid, mHobList);
     mHobList     = HobList2;
@@ -206,6 +209,8 @@ main (
     assert (Status == gTestCaseForMemMap[Index].ExpectedStatus);
     if (Status != RETURN_SUCCESS) {
       assert (ErrorLineNumber == 0);
+      assert(ErrorFileName == NULL);
+      
 
     }
     else {

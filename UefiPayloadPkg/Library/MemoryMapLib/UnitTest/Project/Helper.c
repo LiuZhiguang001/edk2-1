@@ -82,6 +82,7 @@ extern VOID  *mHobList;
 char  TempFormat[MAX_DEBUG_MESSAGE_LENGTH];
 
 extern UINTN  ErrorLineNumber;
+extern CHAR8 *ErrorFileName;
 
 BOOLEAN  IgnoreOtherAssert;
 
@@ -340,6 +341,7 @@ myassert (
   BOOLEAN        x
   )
 {
+  CHAR8* NewFileName;
   if (IgnoreOtherAssert) {
     return;
   }
@@ -347,9 +349,11 @@ myassert (
   if (x) {
   } else {
     printf ("%s %d\n", FileName, LineNumber);
-    if (LineNumber == ErrorLineNumber) {
+    NewFileName = strrchr(FileName, '\\');
+    if (LineNumber == ErrorLineNumber && !(strcmp(NewFileName+1, ErrorFileName))) {
       ErrorLineNumber   = 0;
       IgnoreOtherAssert = TRUE;
+      ErrorFileName = NULL;
       return;
     }
 

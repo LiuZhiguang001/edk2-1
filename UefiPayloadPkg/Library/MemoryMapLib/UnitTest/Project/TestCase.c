@@ -124,14 +124,14 @@ TestCase8(
 }
 
 TEST_CASE  gTestCase[] = {
-  { RETURN_UNSUPPORTED, TestCase1, 503 },
-	{ RETURN_UNSUPPORTED, TestCase2, 412 },
-		{ RETURN_UNSUPPORTED, TestCase3, 664 }, // in hob.c
-		{ RETURN_UNSUPPORTED, TestCase4, 359 },
-		{ RETURN_UNSUPPORTED, TestCase5, 364 },
-		{ RETURN_SUCCESS, TestCase6, 0 },
-				{ RETURN_UNSUPPORTED, TestCase7, 370 },
-				{ RETURN_UNSUPPORTED, TestCase8, 407 },
+  { RETURN_UNSUPPORTED, TestCase1, 503, "MemoryMapLib.c"},
+	{ RETURN_UNSUPPORTED, TestCase2, 412, "MemoryMapLib.c"},
+		{ RETURN_UNSUPPORTED, TestCase3, 664, "Hob.c"}, // in hob.c
+		{ RETURN_UNSUPPORTED, TestCase4, 359, "MemoryMapLib.c"},
+		{ RETURN_UNSUPPORTED, TestCase5, 364, "MemoryMapLib.c"},
+		{ RETURN_SUCCESS, TestCase6, 0, "MemoryMapLib.c"},
+				{ RETURN_UNSUPPORTED, TestCase7, 370, "MemoryMapLib.c"},
+				{ RETURN_UNSUPPORTED, TestCase8, 407, "MemoryMapLib.c"},
 };
 
 UINTN

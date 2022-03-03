@@ -108,6 +108,7 @@ typedef struct {
   RETURN_STATUS               ExpectedStatus;
   TEST_CASE_TO_CREATE_HOBS    TestCaseFunction;
   UINTN                       LineNumber;
+  CHAR8*                      FileName;
 } TEST_CASE;
 
 #endif // _DECLARATIONS_
