@@ -152,6 +152,7 @@
     <ClCompile Include="CreateRandomHobList.c" />
     <ClCompile Include="Helper.c" />
     <ClCompile Include="TestCase.c" />
+    <ClCompile Include="TestCaseForMemMap.c" />
     <ClCompile Include="UnitTestMain.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

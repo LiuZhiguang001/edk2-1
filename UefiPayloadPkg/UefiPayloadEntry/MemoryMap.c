@@ -146,7 +146,7 @@ MemoryMapTableCompare (
 
   @retval      It will not return if SUCCESS, and return error when passing bootloader parameter.
 **/
-EFI_STATUS
+RETURN_STATUS
 CreateHobsBasedOnMemoryMap (
   IN UNIVERSAL_PAYLOAD_MEMORY_MAP *MemoryMapHob
   )
@@ -159,7 +159,12 @@ CreateHobsBasedOnMemoryMap (
   EFI_HOB_RESOURCE_DESCRIPTOR  *ResourceDescriptor;
 
   SortedMemMapTable = AllocatePages (EFI_SIZE_TO_PAGES (MemoryMapHob->DescriptorSize * MemoryMapHob->Count));
+  if (SortedMemMapTable == NULL) {
+    ASSERT (FALSE);
+    return RETURN_UNSUPPORTED;
+  }
   SortedMemMapTable = CopyMem (SortedMemMapTable, MemoryMapHob->MemoryMap, MemoryMapHob->DescriptorSize * MemoryMapHob->Count);
+
   QuickSort (SortedMemMapTable, MemoryMapHob->Count, MemoryMapHob->DescriptorSize, MemoryMapTableCompare, &SortBuffer);
   for (Index = 0; Index < MemoryMapHob->Count; Index++) {
     MemMapTable = (EFI_MEMORY_DESCRIPTOR *)(((UINT8 *)SortedMemMapTable) + Index * MemoryMapHob->DescriptorSize);
@@ -203,7 +208,7 @@ CreateHobsBasedOnMemoryMap (
     }
   }
 
-  return EFI_SUCCESS;
+  return RETURN_SUCCESS;
 }
 
 EFI_STATUS

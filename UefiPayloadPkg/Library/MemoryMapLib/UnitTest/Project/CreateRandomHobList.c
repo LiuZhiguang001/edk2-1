@@ -157,36 +157,7 @@ GetNRandomNumber (
   return AvailibleRandom1 + AvailibleRandom2 + 1;
 }
 
-VOID
-EFIAPI
-CreateTwoHandoffTableHob (
-  VOID **HobList1,
-  VOID **HobList2,
-  VOID **HobListCopy,
-  VOID *Range
-  )
-{
-  VOID    *MemBottom;
-  VOID    *MemTop;
-  VOID    *FreeMemBottom;
-  VOID    *FreeMemTop;
-  UINT64  Length = SIZE_32MB;
 
-  MemBottom     = Range;
-  MemTop        = (VOID *)((UINTN)MemBottom + Length);
-  FreeMemBottom = (VOID *)((UINTN)MemBottom);
-  FreeMemTop    = (VOID *)((UINTN)MemTop);
-
-  *HobList1 = HobConstructor (MemBottom, MemTop, FreeMemBottom, FreeMemTop);
-
-  MemBottom     = (VOID *)((UINTN)MemBottom + SIZE_64MB);
-  MemTop        = (VOID *)((UINTN)MemBottom + Length);
-  FreeMemBottom = (VOID *)((UINTN)MemBottom);
-  FreeMemTop    = (VOID *)((UINTN)MemTop);
-
-  *HobList2    = HobConstructor (MemBottom, MemTop, FreeMemBottom, FreeMemTop);
-  *HobListCopy = (VOID *)((UINTN)Range + SIZE_128MB);
-}
 
 EFI_RESOURCE_ATTRIBUTE_TYPE  AllResourceAttribute[] = {
   EFI_RESOURCE_ATTRIBUTE_UNCACHEABLE,

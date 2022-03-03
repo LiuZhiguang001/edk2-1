@@ -37,13 +37,53 @@
 
 #define PAGE_HEAD_PRIVATE_SIGNATURE  SIGNATURE_32 ('P', 'H', 'D', 'R')
 
+extern EFI_GUID  gEfiHobMemoryAllocModuleGuid = {
+  0xF8E21975, 0x0899, 0x4F58, { 0xA4, 0xBE, 0x55, 0x25, 0xA9, 0xC6, 0xD7, 0x7A }
+};
+extern EFI_GUID  gEfiHobMemoryAllocStackGuid = {
+  0x4ED4BF27, 0x4092, 0x42E9, { 0x80, 0x7D, 0x52, 0x7B, 0x1D, 0x00, 0xC9, 0xBD }
+};
+extern EFI_GUID  gUniversalPayloadMemoryMapGuid = {
+  0x60ae3012, 0xea8d, 0x4010, { 0xa9, 0x9f, 0xb7, 0xe2, 0xf2, 0x90, 0x82, 0x55 }
+};
+extern EFI_GUID  gUefiAcpiBoardInfoGuid = {
+  0xad3d31b, 0xb3d8, 0x4506, { 0xae, 0x71, 0x2e, 0xf1, 0x10, 0x6, 0xd9, 0xf }
+};
+extern EFI_GUID  gUniversalPayloadAcpiTableGuid = {
+  0x9f9a9506, 0x5597, 0x4515, { 0xba, 0xb6, 0x8b, 0xcd, 0xe7, 0x84, 0xba, 0x87 }
+};
+extern EFI_GUID  gUniversalPayloadPciRootBridgeInfoGuid = {
+  0xec4ebacb, 0x2638, 0x416e, { 0xbe, 0x80, 0xe5, 0xfa, 0x4b, 0x51, 0x19, 0x01 }
+};
+extern EFI_GUID  gUniversalPayloadSmbios3TableGuid = {
+  0x92b7896c, 0x3362, 0x46ce, { 0x99, 0xb3, 0x4f, 0x5e, 0x3c, 0x34, 0xeb, 0x42 }
+};
+extern EFI_GUID  gUniversalPayloadSmbiosTableGuid = {
+  0x590a0d26, 0x06e5, 0x4d20, { 0x8a, 0x82, 0x59, 0xea, 0x1b, 0x34, 0x98, 0x2d }
+};
+extern EFI_GUID  gUniversalPayloadExtraDataGuid = {
+  0x15a5baf6, 0x1c91, 0x467d, { 0x9d, 0xfb, 0x31, 0x9d, 0x17, 0x8d, 0x4b, 0xb4 }
+};
+extern EFI_GUID  gUniversalPayloadSerialPortInfoGuid = {
+  0xaa7e190d, 0xbe21, 0x4409, { 0x8e, 0x67, 0xa2, 0xcd, 0xf, 0x61, 0xe1, 0x70 }
+};
+extern EFI_GUID  gEfiMemoryTypeInformationGuid = {
+  0x4C19049F, 0x4137, 0x4DD3, { 0x9C, 0x10, 0x8B, 0x97, 0xA8, 0x3F, 0xFD, 0xFA }
+};
+extern EFI_GUID  gEdkiiBootManagerMenuFileGuid = {
+  0xdf939333, 0x42fc, 0x4b2a, { 0xa5, 0x9e, 0xbb, 0xae, 0x82, 0x81, 0xfe, 0xef }
+};
+extern EFI_GUID  gEfiHobMemoryAllocBspStoreGuid = {
+  0x564B33CD, 0xC92A, 0x4593, { 0x90, 0xBF, 0x24, 0x73, 0xE4, 0x3C, 0x63, 0x22 }
+};
+
 extern VOID  *mHobList;
 #define MAX_DEBUG_MESSAGE_LENGTH  0x100
 char  TempFormat[MAX_DEBUG_MESSAGE_LENGTH];
 
-extern UINTN ErrorLineNumber;
+extern UINTN  ErrorLineNumber;
 
-BOOLEAN IgnoreOtherAssert;
+BOOLEAN  IgnoreOtherAssert;
 
 typedef struct {
   UINT32    Signature;
@@ -197,7 +237,7 @@ InternalAllocatePages (
 
   *(FreeMemoryTop) -= Pages * EFI_PAGE_SIZE;
   *Memory = *(FreeMemoryTop);
-  //printf ("Warning: Allocate page");
+  // printf ("Warning: Allocate page");
   BuildMemoryAllocationHob (
     *(FreeMemoryTop),
     Pages * EFI_PAGE_SIZE,
@@ -295,24 +335,26 @@ CompareGuid (
 
 void
 myassert (
-  IN CONST CHAR8* FileName,
-  IN UINTN        LineNumber,
-  BOOLEAN x
+  IN CONST CHAR8 *FileName,
+  IN UINTN       LineNumber,
+  BOOLEAN        x
   )
 {
   if (IgnoreOtherAssert) {
     return;
   }
+
   if (x) {
   } else {
-    printf("%s %d\n", FileName, LineNumber);
+    printf ("%s %d\n", FileName, LineNumber);
     if (LineNumber == ErrorLineNumber) {
-      ErrorLineNumber = 0;
+      ErrorLineNumber   = 0;
       IgnoreOtherAssert = TRUE;
       return;
     }
+
     printf ("will assert\n");
-   
   }
-  assert(x);
+
+  assert (x);
 }
