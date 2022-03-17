@@ -17,6 +17,7 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #include <Library/PeiServicesLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/BaseMemoryLib.h>
+#include <Library/SetUplDataLib.h>
 
 #include "ElfLib.h"
 
@@ -44,19 +45,19 @@ PeiLoadFileLoadPayload (
   OUT    UINT32                       *AuthenticationState
   )
 {
-  EFI_STATUS                     Status;
-  VOID                           *Elf;
-  UNIVERSAL_PAYLOAD_EXTRA_DATA   *ExtraData;
-  ELF_IMAGE_CONTEXT              Context;
-  UNIVERSAL_PAYLOAD_INFO_HEADER  *PldInfo;
-  UINT32                         Index;
-  UINT16                         ExtraDataIndex;
-  CHAR8                          *SectionName;
-  UINTN                          Offset;
-  UINTN                          Size;
-  UINT32                         ExtraDataCount;
-  UINTN                          Instance;
-  UINTN                          Length;
+  EFI_STATUS                               Status;
+  VOID                                     *Elf;
+  UNIVERSAL_PAYLOAD_EXTRA_DATA_ENTRY  *ExtraData;
+  ELF_IMAGE_CONTEXT                        Context;
+  UNIVERSAL_PAYLOAD_INFO_HEADER            *PldInfo;
+  UINT32                                   Index;
+  UINT16                                   ExtraDataIndex;
+  CHAR8                                    *SectionName;
+  UINTN                                    Offset;
+  UINTN                                    Size;
+  UINT32                                   ExtraDataCount;
+  UINTN                                    Instance;
+  UINTN                                    Length;
 
   //
   // ELF is added to file as RAW section for EDKII bootloader.
@@ -110,14 +111,9 @@ PeiLoadFileLoadPayload (
   //
   // Report the additional PLD sections through HOB.
   //
-  Length    = sizeof (UNIVERSAL_PAYLOAD_EXTRA_DATA) + ExtraDataCount * sizeof (UNIVERSAL_PAYLOAD_EXTRA_DATA_ENTRY);
-  ExtraData = BuildGuidHob (
-                &gUniversalPayloadExtraDataGuid,
-                Length
-                );
-  ExtraData->Count           = ExtraDataCount;
-  ExtraData->Header.Revision = UNIVERSAL_PAYLOAD_EXTRA_DATA_REVISION;
-  ExtraData->Header.Length   = (UINT16)Length;
+  Length    = ExtraDataCount * sizeof (UNIVERSAL_PAYLOAD_EXTRA_DATA_ENTRY);
+  ExtraData = AllocatePool (Length);
+
   if (ExtraDataCount != 0) {
     for (ExtraDataIndex = 0, Index = 0; Index < Context.ShNum; Index++) {
       Status = GetElfSectionName (&Context, Index, &SectionName);
@@ -130,16 +126,17 @@ PeiLoadFileLoadPayload (
         if (!EFI_ERROR (Status)) {
           ASSERT (ExtraDataIndex < ExtraDataCount);
           AsciiStrCpyS (
-            ExtraData->Entry[ExtraDataIndex].Identifier,
-            sizeof (ExtraData->Entry[ExtraDataIndex].Identifier),
+            ExtraData[ExtraDataIndex].Identifier,
+            sizeof (ExtraData[ExtraDataIndex].Identifier),
             SectionName + UNIVERSAL_PAYLOAD_EXTRA_SEC_NAME_PREFIX_LENGTH
             );
-          ExtraData->Entry[ExtraDataIndex].Base = (UINTN)(Context.FileBase + Offset);
-          ExtraData->Entry[ExtraDataIndex].Size = Size;
+          ExtraData[ExtraDataIndex].Base = (UINTN)(Context.FileBase + Offset);
+          ExtraData[ExtraDataIndex].Size = Size;
           ExtraDataIndex++;
         }
       }
     }
+    SetUplExtraData (ExtraData, ExtraDataIndex);
   }
 
   if (Context.ReloadRequired || (Context.PreferredImageAddress != Context.FileBase)) {
