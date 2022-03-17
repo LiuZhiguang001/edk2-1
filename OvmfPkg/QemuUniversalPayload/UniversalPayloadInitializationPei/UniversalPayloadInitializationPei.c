@@ -418,9 +418,9 @@ UniversalPayloadInitialization (
 
 
   SetUplUint64 ("SerialPortBaudRate", (UINT64)PcdGet32 (PcdSerialBaudRate));
-  SetUplUint64 ("SerialPortUseMmio", (UINT64)PcdGetBool (PcdSerialUseMmio));
+  SetUplBoolean ("SerialPortUseMmio", PcdGetBool (PcdSerialUseMmio));
   SetUplUint64 ("SerialPortRegisterBase", (UINT64)PcdGet64 (PcdSerialRegisterBase));
-  SetUplUint8 ("SerialPortRegisterStride", (UINT64)PcdGet32 (PcdSerialRegisterStride));
+  SetUplUint8 ("SerialPortRegisterStride", PcdGet32 (PcdSerialRegisterStride));
 
   UNIVERSAL_PAYLOAD_PCI_ROOT_BRIDGE * RootBridge;
   UINTN         RootBridgeCount;

@@ -218,6 +218,13 @@ BuildHobs (
   return EFI_SUCCESS;
 }
 
+EFI_STATUS
+EFIAPI
+Spec1_0Entry (
+  IN UINTN                        BootloaderParameter,
+  OUT EFI_FIRMWARE_VOLUME_HEADER  **DxeFv
+  );
+
 /**
   Entry point to the C language phase of UEFI payload.
 
@@ -236,27 +243,31 @@ _ModuleEntryPoint (
   EFI_PEI_HOB_POINTERS        Hob;
   EFI_FIRMWARE_VOLUME_HEADER  *DxeFv;
 
-  mHobList = (VOID *)BootloaderParameter;
-  DxeFv    = NULL;
-  // Call constructor for all libraries
-  ProcessLibraryConstructorList ();
+  Status = Spec1_0Entry (BootloaderParameter, &DxeFv);
 
-  DEBUG ((DEBUG_INFO, "Entering Universal Payload...\n"));
-  DEBUG ((DEBUG_INFO, "sizeof(UINTN) = 0x%x\n", sizeof (UINTN)));
+  if (EFI_ERROR (Status)) {
+    mHobList = (VOID *)BootloaderParameter;
+    DxeFv    = NULL;
+    // Call constructor for all libraries
+    ProcessLibraryConstructorList ();
 
-  DEBUG_CODE (
-    //
-    // Dump the Hobs from boot loader
-    //
-    PrintHob (mHobList);
-    );
+    DEBUG ((DEBUG_INFO, "Entering Universal Payload...\n"));
+    DEBUG ((DEBUG_INFO, "sizeof(UINTN) = 0x%x\n", sizeof (UINTN)));
 
-  // Initialize floating point operating environment to be compliant with UEFI spec.
-  InitializeFloatingPointUnits ();
+    DEBUG_CODE (
+      //
+      // Dump the Hobs from boot loader
+      //
+      PrintHob (mHobList);
+      );
 
-  // Build HOB based on information from Bootloader
-  Status = BuildHobs (BootloaderParameter, &DxeFv);
-  ASSERT_EFI_ERROR (Status);
+    // Initialize floating point operating environment to be compliant with UEFI spec.
+    InitializeFloatingPointUnits ();
+
+    // Build HOB based on information from Bootloader
+    Status = BuildHobs (BootloaderParameter, &DxeFv);
+    ASSERT_EFI_ERROR (Status);
+  }
 
   FixUpPcdDatabase (DxeFv);
   Status = UniversalLoadDxeCore (DxeFv, &DxeCoreEntryPoint);
