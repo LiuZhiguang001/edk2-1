@@ -108,7 +108,7 @@ CborEncodeUint8 (
   UINT8  Value
   )
 {
-  CHECK_CBOR_ENCODE_ERROR (cbor_encode_uint (MapEncoder, Value));
+  CHECK_CBOR_ENCODE_ERROR (cbor_encode_simple_value (MapEncoder, Value));
 
   return RETURN_SUCCESS;
 }

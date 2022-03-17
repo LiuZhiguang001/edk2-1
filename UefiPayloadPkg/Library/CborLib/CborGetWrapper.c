@@ -64,21 +64,25 @@ CborDecoderGetUint8 (
   IN  VOID   *Map
   )
 {
-  CborError  ErrorType;
   CborValue  Element;
 
   if (Map == NULL) {
     Map = &RootValue;
   }
 
-  ErrorType = cbor_value_map_find_value (Map, String, &Element);
-  ErrorType = cbor_value_get_uint64 (&Element, (uint64_t *)Result);
-
-  if (ErrorType == 0) {
-    return EFI_SUCCESS;
-  } else {
-    return EFI_NOT_FOUND;
+  CHECK_CBOR_DECODE_ERROR(cbor_value_map_find_value (Map, String, &Element));
+  if (cbor_value_is_valid (&Element) == FALSE) {
+    return RETURN_NOT_FOUND;
   }
+
+  if (cbor_value_is_simple_type (&Element) == FALSE) {
+    return RETURN_INVALID_PARAMETER;
+  }
+
+  CHECK_CBOR_DECODE_ERROR (cbor_value_get_simple_type (&Element, Result));
+
+  return RETURN_SUCCESS;
+
 }
 
 RETURN_STATUS
@@ -89,24 +93,25 @@ CborDecoderGetBoolean (
   IN  VOID     *Map
   )
 {
-  CborError  ErrorType;
   CborValue  Element;
 
   if (Map == NULL) {
     Map = &RootValue;
   }
 
-  ErrorType = cbor_value_map_find_value (Map, String, &Element);
-
-  DEBUG ((DEBUG_INFO, "ErrorType... %d\n", ErrorType));
-  DEBUG ((DEBUG_INFO, "Element->type... %d\n", Element.type));
-  ErrorType = cbor_value_get_boolean (&Element, (bool *)Result);
-
-  if (ErrorType == 0) {
-    return EFI_SUCCESS;
-  } else {
-    return EFI_NOT_FOUND;
+  CHECK_CBOR_DECODE_ERROR(cbor_value_map_find_value (Map, String, &Element));
+  if (cbor_value_is_valid (&Element) == FALSE) {
+    return RETURN_NOT_FOUND;
   }
+
+  if (cbor_value_is_boolean (&Element) == FALSE) {
+    return RETURN_INVALID_PARAMETER;
+  }
+
+  CHECK_CBOR_DECODE_ERROR(cbor_value_get_boolean (&Element, (bool *)Result));
+
+  return RETURN_SUCCESS;
+
 }
 
 RETURN_STATUS
@@ -118,21 +123,24 @@ CborDecoderGetBinary (
   IN     VOID   *Map
   )
 {
-  CborError  ErrorType;
   CborValue  Element;
 
   if (Map == NULL) {
     Map = &RootValue;
   }
 
-  ErrorType = cbor_value_map_find_value (Map, Value, &Element);
-  ErrorType = cbor_value_copy_byte_string (&Element, (uint8_t *)Result, Size, NULL);
-  DEBUG ((DEBUG_INFO, "ErrorType %d.\n", ErrorType));
-  if (ErrorType == 0) {
-    return EFI_SUCCESS;
-  } else {
-    return EFI_NOT_FOUND;
+  CHECK_CBOR_DECODE_ERROR(cbor_value_map_find_value (Map, Value, &Element));
+  if (cbor_value_is_valid (&Element) == FALSE) {
+    return RETURN_NOT_FOUND;
   }
+
+  if (cbor_value_is_byte_string (&Element) == FALSE) {
+    return RETURN_INVALID_PARAMETER;
+  }
+
+  CHECK_CBOR_DECODE_ERROR(cbor_value_copy_byte_string (&Element, (uint8_t *)Result, Size, NULL));
+
+  return RETURN_SUCCESS;
 }
 
 RETURN_STATUS
@@ -144,21 +152,23 @@ CborDecoderGetTextString (
   IN     VOID   *Map
   )
 {
-  CborError  ErrorType;
   CborValue  Element;
 
   if (Map == NULL) {
     Map = &RootValue;
   }
 
-  ErrorType = cbor_value_map_find_value (Map, Value, &Element);
-  ErrorType = cbor_value_copy_text_string (&Element, (char *)Result, Size, NULL);
-  DEBUG ((DEBUG_INFO, "ErrorType %d.\n", ErrorType));
-  if (ErrorType == 0) {
-    return EFI_SUCCESS;
-  } else {
-    return EFI_NOT_FOUND;
+  CHECK_CBOR_DECODE_ERROR(cbor_value_map_find_value (Map, Value, &Element));
+  if (cbor_value_is_valid (&Element) == FALSE) {
+    return RETURN_NOT_FOUND;
   }
+
+  if (cbor_value_is_text_string (&Element) == FALSE) {
+    return RETURN_INVALID_PARAMETER;
+  }
+  CHECK_CBOR_DECODE_ERROR(cbor_value_copy_text_string (&Element, (char *)Result, Size, NULL));
+
+  return RETURN_SUCCESS;
 }
 
 RETURN_STATUS
