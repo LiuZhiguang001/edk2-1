@@ -27,6 +27,7 @@
   PrintHob.c
   AcpiTable.c
   MemoryMap.c
+  UniversalPayloadEntry1_0.c
 
 [Sources.Ia32]
   X64/VirtualMemory.h
@@ -54,6 +55,7 @@
   HobLib
   PeCoffLib
   UefiCpuLib
+  GetUplDataLib
 
 [Guids]
   gEfiMemoryTypeInformationGuid
