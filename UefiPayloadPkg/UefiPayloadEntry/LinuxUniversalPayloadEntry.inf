@@ -1,0 +1,65 @@
+## @file
+#  This is the first module for UEFI payload.
+#
+#  Copyright (c) 2021, Intel Corporation. All rights reserved.<BR>
+#
+#  SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = UniversalPayloadEntry
+  FILE_GUID                      = D4F0F269-1209-4A66-8039-C4D5A700EA4E
+  MODULE_TYPE                    = SEC
+  VERSION_STRING                 = 1.0
+
+#
+# The following information is for reference only and not required by the build tools.
+#
+#  VALID_ARCHITECTURES           = IA32 X64
+#
+
+[Sources]
+  LinuxUniversalPayloadEntry.c
+  MemoryAllocation.c
+  PrintHob.c
+  LoadLinux.nasm
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  UefiCpuPkg/UefiCpuPkg.dec
+  UefiPayloadPkg/UefiPayloadPkg.dec
+
+[LibraryClasses]
+  BaseMemoryLib
+  DebugLib
+  BaseLib
+  SerialPortLib
+  IoLib
+  HobLib
+  UefiCpuLib
+  MemoryMapLib
+
+[Guids]
+  gUniversalPayloadMemoryMapGuid
+  gEfiMemoryTypeInformationGuid
+  gEfiFirmwareFileSystem2Guid
+  gEfiGraphicsInfoHobGuid
+  gEfiGraphicsDeviceInfoHobGuid
+  gUefiAcpiBoardInfoGuid
+  gEfiSmbiosTableGuid
+  gUefiSerialPortInfoGuid
+  gUniversalPayloadExtraDataGuid
+  gPcdDataBaseHobGuid
+  gUniversalPayloadSmbiosTableGuid
+  gEfiHobMemoryAllocBspStoreGuid
+  gUniversalPayloadAcpiTableGuid
+  gUniversalPayloadPciRootBridgeInfoGuid
+  gUniversalPayloadSmbios3TableGuid
+  gEdkiiBootManagerMenuFileGuid
+
+
+[Pcd]
+  gUefiPayloadPkgTokenSpaceGuid.PcdSystemMemoryUefiRegionSize
