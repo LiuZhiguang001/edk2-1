@@ -136,6 +136,9 @@ def BuildUniversalPayload(Args, MacroList):
         if setup_sects != 0:
             setup_size = (setup_sects + 1) * 512
         LinuxKernalBuffer = LinuxKernalBuffer[setup_size:]
+    if boot_params.relocatable_kernel == 0:
+        print("- Failed - the linux kernel must be able to relocate")
+        sys.exit(1)
     fp = open(LinuxBootParams, 'wb')
     fp.write(bytearray(boot_params))
     fp.close()
