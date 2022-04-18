@@ -33,8 +33,6 @@
   MemTypeInfo.c
   Platform.c
   Platform.h
-  Xen.c
-  Xen.h
 
 [Packages]
   EmbeddedPkg/EmbeddedPkg.dec
@@ -46,7 +44,7 @@
 
 [Guids]
   gEfiMemoryTypeInformationGuid
-  gEfiXenInfoGuid
+  gFdtHobGuid
 
 [LibraryClasses]
   BaseLib
@@ -65,6 +63,7 @@
   MtrrLib
   MemEncryptSevLib
   PcdLib
+  VmgExitLib
 
 [Pcd]
   gUefiOvmfPkgTokenSpaceGuid.PcdOvmfPeiMemFvBase
@@ -96,7 +95,6 @@
   gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareSize
   gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableSize
   gEfiMdeModulePkgTokenSpaceGuid.PcdEmuVariableNvStoreReserved
-  gEfiMdeModulePkgTokenSpaceGuid.PcdPciDisableBusEnumeration
   gEfiMdeModulePkgTokenSpaceGuid.PcdDxeIplSwitchToLongMode
   gEfiMdeModulePkgTokenSpaceGuid.PcdUse1GPageTable
   gEfiMdeModulePkgTokenSpaceGuid.PcdSetNxForStack
@@ -110,8 +108,12 @@
   gUefiCpuPkgTokenSpaceGuid.PcdCpuBootLogicalProcessorNumber
   gUefiCpuPkgTokenSpaceGuid.PcdCpuApStackSize
   gUefiCpuPkgTokenSpaceGuid.PcdSevEsIsEnabled
+  gEfiMdePkgTokenSpaceGuid.PcdConfidentialComputingGuestAttr
+  gUefiCpuPkgTokenSpaceGuid.PcdGhcbHypervisorFeatures
 
 [FixedPcd]
+  gUefiOvmfPkgTokenSpaceGuid.PcdOvmfCpuidBase
+  gUefiOvmfPkgTokenSpaceGuid.PcdOvmfCpuidSize
   gEfiMdePkgTokenSpaceGuid.PcdPciExpressBaseAddress
   gEmbeddedTokenSpaceGuid.PcdMemoryTypeEfiACPIMemoryNVS
   gEmbeddedTokenSpaceGuid.PcdMemoryTypeEfiACPIReclaimMemory
@@ -120,8 +122,10 @@
   gEmbeddedTokenSpaceGuid.PcdMemoryTypeEfiRuntimeServicesData
   gUefiOvmfPkgTokenSpaceGuid.PcdOvmfSecGhcbBackupBase
   gUefiOvmfPkgTokenSpaceGuid.PcdOvmfSecGhcbBackupSize
-  gUefiCpuPkgTokenSpaceGuid.PcdSevEsWorkAreaBase
-  gUefiCpuPkgTokenSpaceGuid.PcdSevEsWorkAreaSize
+  gUefiOvmfPkgTokenSpaceGuid.PcdOvmfWorkAreaBase
+  gUefiOvmfPkgTokenSpaceGuid.PcdOvmfWorkAreaSize
+  gUefiOvmfPkgTokenSpaceGuid.PcdOvmfSnpSecretsBase
+  gUefiOvmfPkgTokenSpaceGuid.PcdOvmfSnpSecretsSize
 
 [FeaturePcd]
   gUefiOvmfPkgTokenSpaceGuid.PcdCsmEnable

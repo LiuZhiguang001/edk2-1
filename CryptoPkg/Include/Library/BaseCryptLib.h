@@ -17,12 +17,12 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 ///
 /// MD5 digest size in bytes
 ///
-#define MD5_DIGEST_SIZE     16
+#define MD5_DIGEST_SIZE  16
 
 ///
 /// SHA-1 digest size in bytes.
 ///
-#define SHA1_DIGEST_SIZE    20
+#define SHA1_DIGEST_SIZE  20
 
 ///
 /// SHA-256 digest size in bytes
@@ -42,17 +42,17 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 ///
 /// SM3 digest size in bytes
 ///
-#define SM3_256_DIGEST_SIZE 32
+#define SM3_256_DIGEST_SIZE  32
 
 ///
 /// TDES block size in bytes
 ///
-#define TDES_BLOCK_SIZE     8
+#define TDES_BLOCK_SIZE  8
 
 ///
 /// AES block size in bytes
 ///
-#define AES_BLOCK_SIZE      16
+#define AES_BLOCK_SIZE  16
 
 ///
 /// RSA Key Tags Definition used in RsaSetKey() function for key component identification.
@@ -68,11 +68,12 @@ typedef enum {
   RsaKeyQInv    ///< The CRT coefficient (== 1/q mod p)
 } RSA_KEY_TAG;
 
-//=====================================================================================
+// =====================================================================================
 //    One-Way Cryptographic Hash Primitives
-//=====================================================================================
+// =====================================================================================
 
 #ifdef ENABLE_MD5_DEPRECATED_INTERFACES
+
 /**
   Retrieves the size, in bytes, of the context buffer required for MD5 hash operations.
 
@@ -212,9 +213,11 @@ Md5HashAll (
   IN   UINTN       DataSize,
   OUT  UINT8       *HashValue
   );
+
 #endif
 
 #ifndef DISABLE_SHA1_DEPRECATED_INTERFACES
+
 /**
   Retrieves the size, in bytes, of the context buffer required for SHA-1 hash operations.
 
@@ -354,6 +357,7 @@ Sha1HashAll (
   IN   UINTN       DataSize,
   OUT  UINT8       *HashValue
   );
+
 #endif
 
 /**
@@ -880,9 +884,9 @@ Sm3HashAll (
   OUT  UINT8       *HashValue
   );
 
-//=====================================================================================
+// =====================================================================================
 //    MAC (Message Authentication Code) Primitive
-//=====================================================================================
+// =====================================================================================
 
 /**
   Allocates and initializes one HMAC_CTX context for subsequent HMAC-SHA256 use.
@@ -1012,9 +1016,9 @@ HmacSha256Final (
   OUT     UINT8  *HmacValue
   );
 
-//=====================================================================================
+// =====================================================================================
 //    Symmetric Cryptography Primitive
-//=====================================================================================
+// =====================================================================================
 
 /**
   Retrieves the size, in bytes, of the context buffer required for AES operations.
@@ -1139,9 +1143,9 @@ AesCbcDecrypt (
   OUT  UINT8        *Output
   );
 
-//=====================================================================================
+// =====================================================================================
 //    Asymmetric Cryptography Primitive
-//=====================================================================================
+// =====================================================================================
 
 /**
   Allocates and initializes one RSA context for subsequent use.
@@ -1364,6 +1368,80 @@ RsaPkcs1Verify (
   );
 
 /**
+  Carries out the RSA-SSA signature generation with EMSA-PSS encoding scheme.
+
+  This function carries out the RSA-SSA signature generation with EMSA-PSS encoding scheme defined in
+  RFC 8017.
+  Mask generation function is the same as the message digest algorithm.
+  If the Signature buffer is too small to hold the contents of signature, FALSE
+  is returned and SigSize is set to the required buffer size to obtain the signature.
+
+  If RsaContext is NULL, then return FALSE.
+  If Message is NULL, then return FALSE.
+  If MsgSize is zero or > INT_MAX, then return FALSE.
+  If DigestLen is NOT 32, 48 or 64, return FALSE.
+  If SaltLen is not equal to DigestLen, then return FALSE.
+  If SigSize is large enough but Signature is NULL, then return FALSE.
+  If this interface is not supported, then return FALSE.
+
+  @param[in]      RsaContext   Pointer to RSA context for signature generation.
+  @param[in]      Message      Pointer to octet message to be signed.
+  @param[in]      MsgSize      Size of the message in bytes.
+  @param[in]      DigestLen    Length of the digest in bytes to be used for RSA signature operation.
+  @param[in]      SaltLen      Length of the salt in bytes to be used for PSS encoding.
+  @param[out]     Signature    Pointer to buffer to receive RSA PSS signature.
+  @param[in, out] SigSize      On input, the size of Signature buffer in bytes.
+                               On output, the size of data returned in Signature buffer in bytes.
+
+  @retval  TRUE   Signature successfully generated in RSASSA-PSS.
+  @retval  FALSE  Signature generation failed.
+  @retval  FALSE  SigSize is too small.
+  @retval  FALSE  This interface is not supported.
+
+**/
+BOOLEAN
+EFIAPI
+RsaPssSign (
+  IN      VOID         *RsaContext,
+  IN      CONST UINT8  *Message,
+  IN      UINTN        MsgSize,
+  IN      UINT16       DigestLen,
+  IN      UINT16       SaltLen,
+  OUT     UINT8        *Signature,
+  IN OUT  UINTN        *SigSize
+  );
+
+/**
+  Verifies the RSA signature with RSASSA-PSS signature scheme defined in RFC 8017.
+  Implementation determines salt length automatically from the signature encoding.
+  Mask generation function is the same as the message digest algorithm.
+  Salt length should be equal to digest length.
+
+  @param[in]  RsaContext      Pointer to RSA context for signature verification.
+  @param[in]  Message         Pointer to octet message to be verified.
+  @param[in]  MsgSize         Size of the message in bytes.
+  @param[in]  Signature       Pointer to RSASSA-PSS signature to be verified.
+  @param[in]  SigSize         Size of signature in bytes.
+  @param[in]  DigestLen       Length of digest for RSA operation.
+  @param[in]  SaltLen         Salt length for PSS encoding.
+
+  @retval  TRUE   Valid signature encoded in RSASSA-PSS.
+  @retval  FALSE  Invalid signature or invalid RSA context.
+
+**/
+BOOLEAN
+EFIAPI
+RsaPssVerify (
+  IN  VOID         *RsaContext,
+  IN  CONST UINT8  *Message,
+  IN  UINTN        MsgSize,
+  IN  CONST UINT8  *Signature,
+  IN  UINTN        SigSize,
+  IN  UINT16       DigestLen,
+  IN  UINT16       SaltLen
+  );
+
+/**
   Retrieve the RSA Private Key from the password-protected PEM key data.
 
   If PemData is NULL, then return FALSE.
@@ -1476,7 +1554,7 @@ EFIAPI
 X509GetCommonName (
   IN      CONST UINT8  *Cert,
   IN      UINTN        CertSize,
-  OUT     CHAR8        *CommonName,  OPTIONAL
+  OUT     CHAR8        *CommonName   OPTIONAL,
   IN OUT  UINTN        *CommonNameSize
   );
 
@@ -1509,10 +1587,10 @@ X509GetCommonName (
 RETURN_STATUS
 EFIAPI
 X509GetOrganizationName (
-  IN      CONST UINT8   *Cert,
-  IN      UINTN         CertSize,
-  OUT     CHAR8         *NameBuffer,  OPTIONAL
-  IN OUT  UINTN         *NameBufferSize
+  IN      CONST UINT8  *Cert,
+  IN      UINTN        CertSize,
+  OUT     CHAR8        *NameBuffer   OPTIONAL,
+  IN OUT  UINTN        *NameBufferSize
   );
 
 /**
@@ -1747,8 +1825,8 @@ Pkcs1v2Encrypt (
   IN   UINTN        PublicKeySize,
   IN   UINT8        *InData,
   IN   UINTN        InDataSize,
-  IN   CONST UINT8  *PrngSeed,  OPTIONAL
-  IN   UINTN        PrngSeedSize,  OPTIONAL
+  IN   CONST UINT8  *PrngSeed   OPTIONAL,
+  IN   UINTN        PrngSeedSize   OPTIONAL,
   OUT  UINT8        **EncryptedData,
   OUT  UINTN        *EncryptedDataSize
   );
@@ -1777,8 +1855,8 @@ typedef struct {
 } EFI_CERT_DATA;
 
 typedef struct {
-  UINT8             CertNumber;   // Number of X.509 certificate.
-  //EFI_CERT_DATA   CertArray[];  // An array of X.509 certificate.
+  UINT8    CertNumber;            // Number of X.509 certificate.
+  // EFI_CERT_DATA   CertArray[];  // An array of X.509 certificate.
 } EFI_CERT_STACK;
 
 #pragma pack()
@@ -1831,7 +1909,7 @@ Pkcs7GetSigners (
 VOID
 EFIAPI
 Pkcs7FreeSigners (
-  IN  UINT8        *Certs
+  IN  UINT8  *Certs
   );
 
 /**
@@ -2077,9 +2155,9 @@ ImageTimestampVerify (
   OUT EFI_TIME     *SigningTime
   );
 
-//=====================================================================================
+// =====================================================================================
 //    DH Key Exchange Primitive
-//=====================================================================================
+// =====================================================================================
 
 /**
   Allocates and Initializes one Diffie-Hellman Context for subsequent use.
@@ -2242,9 +2320,9 @@ DhComputeKey (
   IN OUT  UINTN        *KeySize
   );
 
-//=====================================================================================
+// =====================================================================================
 //    Pseudo-Random Generation Primitive
-//=====================================================================================
+// =====================================================================================
 
 /**
   Sets up the seed value for the pseudorandom number generator.
@@ -2292,9 +2370,9 @@ RandomBytes (
   IN   UINTN  Size
   );
 
-//=====================================================================================
+// =====================================================================================
 //    Key Derivation Function Primitive
-//=====================================================================================
+// =====================================================================================
 
 /**
   Derive key data using HMAC-SHA256 based KDF.
